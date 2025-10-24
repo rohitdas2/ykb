@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotificationStore } from '../store/notificationStore';
+import { getTeamsWithStandings } from '../utils/espnApi';
 import '../styles/Pages.css';
 
 const Rankings = () => {
@@ -9,6 +11,8 @@ const Rankings = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [conversations, setConversations] = useState([
     {
       id: 1,
@@ -60,46 +64,14 @@ const Rankings = () => {
     { id: 8, rank: 8, name: 'Damian Lillard', team: 'Trail Blazers', score: 8.0, change: '↓ 2' },
   ]);
 
-  const [teams, setTeams] = useState([
-    { id: 1, rank: 1, name: 'Boston Celtics', wins: 64, score: 9.1, change: '↑ 2' },
-    { id: 2, rank: 2, name: 'Denver Nuggets', wins: 57, score: 8.9, change: '→' },
-    { id: 3, rank: 3, name: 'Phoenix Suns', wins: 62, score: 8.8, change: '↑ 1' },
-    { id: 4, rank: 4, name: 'Los Angeles Lakers', wins: 56, score: 8.4, change: '↓ 1' },
-    { id: 5, rank: 5, name: 'Golden State Warriors', wins: 46, score: 7.9, change: '→' },
-  ]);
+  const [teams, setTeams] = useState([]);
+  const [teamsLoading, setTeamsLoading] = useState(true);
+  const [teamsError, setTeamsError] = useState(null);
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'rating',
-      user: 'Analytics Pro',
-      action: 'rated your ranking',
-      message: '"Luka Doncic #1" - 8/10',
-      time: '5 minutes ago',
-      read: false,
-      avatar: '📊'
-    },
-    {
-      id: 2,
-      type: 'comment',
-      user: 'Basketball Eyes',
-      action: 'commented on your ranking',
-      message: 'Great breakdown of the top 5!',
-      time: '30 minutes ago',
-      read: false,
-      avatar: '👀'
-    },
-    {
-      id: 3,
-      type: 'follow',
-      user: 'Stat Nerd',
-      action: 'started following you',
-      message: 'They appreciated your ratings',
-      time: '2 hours ago',
-      read: true,
-      avatar: '🤓'
-    }
-  ]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
   const handleSendMessage = () => {
     if (messageText.trim() && selectedConversation !== null) {
@@ -123,27 +95,64 @@ const Rankings = () => {
     }
   };
 
+  // Fetch leaderboard data
+  React.useEffect(() => {
+    const fetchLeaderboard = async () => {
+      setLoadingLeaderboard(true);
+      try {
+        const response = await fetch('http://localhost:5000/api/leaderboard');
+        const data = await response.json();
+        setLeaderboard(data);
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        setLeaderboard([]);
+      } finally {
+        setLoadingLeaderboard(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
+
+  // Fetch ESPN teams data
+  useEffect(() => {
+    const fetchTeams = async () => {
+      setTeamsLoading(true);
+      try {
+        const teamsData = await getTeamsWithStandings();
+
+        // Sort teams by wins (descending) and add ranking
+        const rankedTeams = teamsData
+          .sort((a, b) => {
+            const winsA = a.wins || 0;
+            const winsB = b.wins || 0;
+            if (winsB !== winsA) return winsB - winsA;
+
+            // If wins are same, use win percentage
+            const winPercentA = a.winPercent || 0;
+            const winPercentB = b.winPercent || 0;
+            return winPercentB - winPercentA;
+          })
+          .map((team, index) => ({
+            ...team,
+            rank: index + 1,
+          }));
+
+        setTeams(rankedTeams);
+        setTeamsError(null);
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+        setTeamsError(error.message);
+        setTeams([]);
+      } finally {
+        setTeamsLoading(false);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
-
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
-  };
 
   return (
     <div className="page-container">
@@ -168,6 +177,9 @@ const Rankings = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
@@ -204,6 +216,12 @@ const Rankings = () => {
               >
                 Draft Prospects
               </button>
+              <button
+                className={`tab ${category === 'leaderboard' ? 'active' : ''}`}
+                onClick={() => setCategory('leaderboard')}
+              >
+                Leaderboard
+              </button>
             </div>
 
             {category === 'players' && (
@@ -237,68 +255,55 @@ const Rankings = () => {
 
             {category === 'teams' && (
               <div className="rankings-list">
-                <div className="rankings-header">
-                  <div className="rank-col">Rank</div>
-                  <div className="name-col">Team</div>
-                  <div className="team-col">Wins</div>
-                  <div className="score-col">Score</div>
-                  <div className="change-col">Change</div>
-                </div>
-                {teams.map((team) => {
-                  // Map team name to team code
-                  const teamCodeMap = {
-                    'Boston Celtics': 'BOS',
-                    'Denver Nuggets': 'DEN',
-                    'Phoenix Suns': 'PHX',
-                    'Los Angeles Lakers': 'LAL',
-                    'Golden State Warriors': 'GSW',
-                    'Milwaukee Bucks': 'MIL',
-                    'Dallas Mavericks': 'DAL',
-                    'New York Knicks': 'NYK',
-                    'Los Angeles Clippers': 'LAC',
-                    'Miami Heat': 'MIA',
-                    'Brooklyn Nets': 'BRK',
-                    '76ers': 'PHI',
-                    'Philadelphia 76ers': 'PHI',
-                    'Atlanta Hawks': 'ATL',
-                    'Chicago Bulls': 'CHI',
-                    'Toronto Raptors': 'TOR',
-                    'Cleveland Cavaliers': 'CLE',
-                    'Orlando Magic': 'ORL',
-                    'Washington Wizards': 'WAS',
-                    'Indiana Pacers': 'IND',
-                    'Detroit Pistons': 'DET',
-                    'Charlotte Hornets': 'CHO',
-                    'New Orleans Pelicans': 'NOP',
-                    'San Antonio Spurs': 'SAS',
-                    'Memphis Grizzlies': 'MEM',
-                    'Utah Jazz': 'UTA',
-                    'Oklahoma City Thunder': 'OKC',
-                    'Portland Trail Blazers': 'POR',
-                    'Minnesota Timberwolves': 'MIN',
-                    'Sacramento Kings': 'SAC',
-                    'Houston Rockets': 'HOU'
-                  };
-                  const teamCode = teamCodeMap[team.name];
-
-                  return (
-                    <div
-                      key={team.id}
-                      className="ranking-item clickable"
-                      onClick={() => teamCode && navigate(`/team/${teamCode}`)}
-                      style={{ cursor: teamCode ? 'pointer' : 'default' }}
-                    >
-                      <div className="rank-col">{team.rank}</div>
-                      <div className="name-col">
-                        <span className="emoji">🏆</span>
-                        <span>{team.name}</span>
-                      </div>
-                      <div className="team-col">{team.wins}W</div>
-                      <div className="score-col">{team.score}/10</div>
-                      <div className="change-col">{team.change}</div>
+                {teamsLoading ? (
+                  <div className="empty-state">
+                    <p>Loading team standings...</p>
+                  </div>
+                ) : teamsError ? (
+                  <div className="empty-state">
+                    <p>Error loading teams</p>
+                    <small>{teamsError}</small>
+                  </div>
+                ) : teams.length > 0 ? (
+                  <>
+                    <div className="rankings-header">
+                      <div className="rank-col">Rank</div>
+                      <div className="name-col">Team</div>
+                      <div className="team-col">Record</div>
+                      <div className="score-col">Win %</div>
+                      <div className="change-col">PPG</div>
                     </div>
-                  );
-                })}
+                    {teams.map((team) => {
+                      const teamCode = team.abbreviation || '';
+                      const wins = team.wins || 0;
+                      const losses = team.losses || 0;
+                      const winPercent = ((team.winPercent || 0) * 100).toFixed(1);
+                      const pointsPerGame = (team.pointsPerGame || 0).toFixed(1);
+
+                      return (
+                        <div
+                          key={team.id}
+                          className="ranking-item clickable"
+                          onClick={() => teamCode && navigate(`/team/${teamCode}`)}
+                          style={{ cursor: teamCode ? 'pointer' : 'default' }}
+                        >
+                          <div className="rank-col">{team.rank}</div>
+                          <div className="name-col">
+                            <span className="emoji">🏆</span>
+                            <span>{team.teamName}</span>
+                          </div>
+                          <div className="team-col">{wins}W-{losses}L</div>
+                          <div className="score-col">{winPercent}%</div>
+                          <div className="change-col">{pointsPerGame}</div>
+                        </div>
+                      );
+                    })}
+                  </>
+                ) : (
+                  <div className="empty-state">
+                    <p>No teams available</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -313,6 +318,40 @@ const Rankings = () => {
               <div className="empty-state">
                 <p>🎯 Draft Prospects Rankings Coming Soon</p>
                 <small>Rate upcoming draft picks</small>
+              </div>
+            )}
+
+            {category === 'leaderboard' && (
+              <div className="rankings-list">
+                <div className="rankings-header">
+                  <div className="rank-col">Rank</div>
+                  <div className="name-col">User</div>
+                  <div className="team-col">Followers</div>
+                  <div className="score-col">Ball Knowledge</div>
+                  <div className="change-col">Score</div>
+                </div>
+                {loadingLeaderboard ? (
+                  <div className="empty-state">
+                    <p>Loading leaderboard...</p>
+                  </div>
+                ) : leaderboard.length > 0 ? (
+                  leaderboard.map((user, index) => (
+                    <div key={user.id} className="ranking-item">
+                      <div className="rank-col">{index + 1}</div>
+                      <div className="name-col">
+                        <span className="emoji">{user.avatar}</span>
+                        <span>{user.displayName}</span>
+                      </div>
+                      <div className="team-col">{user.followers}</div>
+                      <div className="score-col">{user.ballKnowledge}/100</div>
+                      <div className="change-col">⭐</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <p>No leaderboard data available</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -331,33 +370,6 @@ const Rankings = () => {
                 <p>More transparent & accurate than traditional rankings.</p>
               </div>
             </div>
-
-            <div className="sidebar-card">
-              <h3>Top Contributors</h3>
-              <div className="contributor-list">
-                <div className="contributor-item">
-                  <span className="rank">1</span>
-                  <div className="info">
-                    <p className="name">Analytics Pro</p>
-                    <p className="count">1,203 ratings</p>
-                  </div>
-                </div>
-                <div className="contributor-item">
-                  <span className="rank">2</span>
-                  <div className="info">
-                    <p className="name">Basketball Eyes</p>
-                    <p className="count">987 ratings</p>
-                  </div>
-                </div>
-                <div className="contributor-item">
-                  <span className="rank">3</span>
-                  <div className="info">
-                    <p className="name">Stat Nerd</p>
-                    <p className="count">856 ratings</p>
-                  </div>
-                </div>
-              </div>
-            </div>
           </aside>
         </div>
       </main>
@@ -369,7 +381,7 @@ const Rankings = () => {
             <div className="notifications-header">
               <h2>Notifications</h2>
               {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+                <button className="mark-all-read-btn" onClick={markAllAsRead}>Mark all as read</button>
               )}
             </div>
 
@@ -387,7 +399,7 @@ const Rankings = () => {
                     </div>
                     <button
                       className="dismiss-btn"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                     >
                       ✕
                     </button>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotificationStore } from '../store/notificationStore';
 import '../styles/Pages.css';
 
 const Trending = () => {
@@ -53,38 +54,10 @@ const Trending = () => {
     }
   ]);
 
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'search',
-      user: 'Search Alert',
-      action: 'trending search',
-      message: '#MVPRace is heating up',
-      time: '2 hours ago',
-      read: false,
-      avatar: '🔥'
-    },
-    {
-      id: 2,
-      type: 'trending',
-      user: 'Trending Now',
-      action: 'topic trending',
-      message: 'Celtics vs Lakers',
-      time: '4 hours ago',
-      read: false,
-      avatar: '📈'
-    },
-    {
-      id: 3,
-      type: 'follow',
-      user: 'Analytics Pro',
-      action: 'started following you',
-      message: '',
-      time: '1 day ago',
-      read: true,
-      avatar: '📊'
-    }
-  ]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -151,26 +124,6 @@ const Trending = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
-  };
-
 
   return (
     <div className="page-container">
@@ -195,6 +148,9 @@ const Trending = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
@@ -374,7 +330,7 @@ const Trending = () => {
             <div className="notifications-header">
               <h2>Notifications</h2>
               {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+                <button className="mark-all-read-btn" onClick={markAllAsRead}>Mark all as read</button>
               )}
             </div>
 
@@ -392,7 +348,7 @@ const Trending = () => {
                     </div>
                     <button
                       className="dismiss-btn"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                     >
                       ✕
                     </button>

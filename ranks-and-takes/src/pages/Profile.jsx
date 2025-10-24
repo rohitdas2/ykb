@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notificationStore';
 import '../styles/Pages.css';
 
 const Profile = () => {
@@ -66,48 +67,10 @@ const Profile = () => {
   ]);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
   const [profilePicture, setProfilePicture] = useState(localStorage.getItem('userProfilePicture') || null);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'follow',
-      user: 'Basketball Pro',
-      action: 'started following you',
-      message: 'They liked your recent activity',
-      time: '15 minutes ago',
-      read: false,
-      avatar: '👤'
-    },
-    {
-      id: 2,
-      type: 'like',
-      user: 'Stats Guru',
-      action: 'liked your take',
-      message: 'Your Celtics analysis is on point',
-      time: '1 hour ago',
-      read: false,
-      avatar: '❤️'
-    },
-    {
-      id: 3,
-      type: 'achievement',
-      user: 'Ranks & Takes',
-      action: 'achievement unlocked',
-      message: 'You reached 20+ takes milestone',
-      time: '2 hours ago',
-      read: true,
-      avatar: '🏆'
-    },
-    {
-      id: 4,
-      type: 'comment',
-      user: 'Hoops Fan',
-      action: 'commented on your profile',
-      message: 'Love your consistent posting!',
-      time: '4 hours ago',
-      read: true,
-      avatar: '💬'
-    }
-  ]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
   const handleLogout = () => {
     logout();
@@ -186,26 +149,6 @@ const Profile = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
-  };
-
   const userScores = [
     { category: 'Accuracy', score: 7.8, description: 'How accurate your takes are', icon: '🎯' },
     { category: 'Popularity', score: 8.2, description: 'Community engagement', icon: '🌟' },
@@ -227,7 +170,23 @@ const Profile = () => {
       rank: 8.2,
       numRatings: 523,
       likes: 234,
-      timestamp: '2 days ago'
+      timestamp: '2 days ago',
+      comments: [
+        {
+          id: 1,
+          author: 'Sports Analyst',
+          avatar: '👨‍💼',
+          text: 'Completely agree! Their defense is elite.',
+          timestamp: '1 day ago'
+        },
+        {
+          id: 2,
+          author: 'Hoops Lover',
+          avatar: '👩‍🦱',
+          text: 'Their bench depth is unreal',
+          timestamp: '18 hours ago'
+        }
+      ]
     },
     {
       id: 2,
@@ -235,7 +194,16 @@ const Profile = () => {
       rank: 8.7,
       numRatings: 812,
       likes: 456,
-      timestamp: '5 days ago'
+      timestamp: '5 days ago',
+      comments: [
+        {
+          id: 3,
+          author: 'Basketball Eyes',
+          avatar: '👨‍🦨',
+          text: 'Tatum is looking incredible this season!',
+          timestamp: '4 days ago'
+        }
+      ]
     },
   ];
 
@@ -262,6 +230,9 @@ const Profile = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" onClick={() => setShowSettings(true)} style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
@@ -307,6 +278,10 @@ const Profile = () => {
                   <span className="stat-value">856</span>
                   <span className="stat-label">Following</span>
                 </div>
+                <div className="stat">
+                  <span className="stat-value">234</span>
+                  <span className="stat-label">Friends</span>
+                </div>
               </div>
             </div>
 
@@ -317,12 +292,6 @@ const Profile = () => {
                   onClick={() => setIsEditing(true)}
                 >
                   Edit Profile
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => setShowSettings(true)}
-                >
-                  ⚙️ Settings
                 </button>
               </div>
             )}
@@ -403,12 +372,6 @@ const Profile = () => {
                 Takes ({userTakes.length})
               </button>
               <button
-                className={`tab ${activeTab === 'scores' ? 'active' : ''}`}
-                onClick={() => setActiveTab('scores')}
-              >
-                My Scores
-              </button>
-              <button
                 className={`tab ${activeTab === 'ratings' ? 'active' : ''}`}
                 onClick={() => setActiveTab('ratings')}
               >
@@ -468,6 +431,30 @@ const Profile = () => {
                         🗑️
                       </button>
                     </div>
+
+                    {take.comments && take.comments.length > 0 && (
+                      <div className="top-comment-section">
+                        <div className="comment-divider"></div>
+                        <div className="top-comment">
+                          <div className="comment-header">
+                            <span className="comment-avatar">{take.comments[0].avatar}</span>
+                            <div className="comment-author-info">
+                              <p className="comment-author">{take.comments[0].author}</p>
+                              <p className="comment-time">{take.comments[0].timestamp}</p>
+                            </div>
+                          </div>
+                          <p className="comment-text">{take.comments[0].text}</p>
+                          {take.comments.length > 1 && (
+                            <button
+                              className="view-more-comments-btn"
+                              onClick={() => handleActionClick(take.id, 'comment')}
+                            >
+                              View {take.comments.length - 1} more comment{take.comments.length - 1 > 1 ? 's' : ''}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -487,84 +474,38 @@ const Profile = () => {
               </div>
             )}
 
-            {activeTab === 'scores' && (
-              <div className="scores-section">
-                <div className="scores-header">
-                  <h2>Your Stats & Scores</h2>
-                  <p>Track your performance and community reputation</p>
-                </div>
-
-                <div className="scores-grid">
-                  {userScores.map((score, idx) => (
-                    <div key={idx} className="score-card">
-                      <div className="score-icon">{score.icon}</div>
-                      <div className="score-content">
-                        <h3>{score.category}</h3>
-                        <p className="score-description">{score.description}</p>
-                      </div>
-                      <div className="score-value">
-                        <span className="score-number">{score.score}</span>
-                        <span className="score-max">/10</span>
-                      </div>
-                      <div className="score-bar">
-                        <div className="score-progress" style={{ width: `${score.score * 10}%` }}></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="scores-summary">
-                  <div className="summary-stat">
-                    <p className="summary-label">Average Score</p>
-                    <p className="summary-value">7.9</p>
-                  </div>
-                  <div className="summary-stat">
-                    <p className="summary-label">Total Takes</p>
-                    <p className="summary-value">34</p>
-                  </div>
-                  <div className="summary-stat">
-                    <p className="summary-label">Community Rank</p>
-                    <p className="summary-value">#247</p>
-                  </div>
-                  <div className="summary-stat">
-                    <p className="summary-label">Followers</p>
-                    <p className="summary-value">2.4K</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-card">
-              <h3>Takes</h3>
-              <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#00274C', margin: '0 0 8px 0' }}>34</p>
-                <p style={{ fontSize: '12px', color: '#999', marginTop: '12px' }}>Posts created</p>
-              </div>
-            </div>
-
-            <div className="sidebar-card">
-              <h3>Games Watched</h3>
-              <div className="stat-bar-item">
-                <div className="stat-bar-header">
-                  <span className="stat-bar-label">Progress</span>
-                  <span className="stat-bar-value">67 / 82</span>
+              <h3 style={{ margin: '0 0 16px 0' }}>Stats</h3>
+              <div className="profile-stats-grid">
+                <div className="profile-stat-item">
+                  <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>Takes</span>
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#00274C', marginTop: '4px' }}>34</span>
                 </div>
-                <div className="stat-bar-container">
-                  <div className="stat-bar-progress" style={{ width: '81.71%' }}></div>
-                </div>
-                <p style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>Games watched this season</p>
-              </div>
-            </div>
 
-            <div className="sidebar-card">
-              <h3>Average Rating</h3>
-              <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#00274C', margin: '0 0 8px 0' }}>7.8</p>
-                <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>/ 10.0</p>
-                <p style={{ fontSize: '12px', color: '#999', marginTop: '12px' }}>Based on 523 ratings</p>
+                <div className="profile-stat-item">
+                  <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>Games Watched</span>
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#00274C', marginTop: '4px' }}>67/82</span>
+                  <div className="stat-bar-container" style={{ height: '4px', background: '#eee', borderRadius: '2px', overflow: 'hidden', marginTop: '6px' }}>
+                    <div className="stat-bar-progress" style={{ width: '81.71%', height: '100%', background: '#00274C', borderRadius: '2px' }}></div>
+                  </div>
+                </div>
+
+                <div className="profile-stat-item">
+                  <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>Ball Knowledge</span>
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#00274C', marginTop: '4px' }}>75/100</span>
+                </div>
+
+                <div className="profile-stat-item">
+                  <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>Consistency Score</span>
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#00274C', marginTop: '4px' }}>8.5/10</span>
+                  <div className="stat-bar-container" style={{ height: '4px', background: '#eee', borderRadius: '2px', overflow: 'hidden', marginTop: '6px' }}>
+                    <div className="stat-bar-progress" style={{ width: '85%', height: '100%', background: '#00274C', borderRadius: '2px' }}></div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -586,50 +527,6 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="sidebar-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h3 style={{ margin: 0 }}>Friends</h3>
-                <button
-                  className="view-all-btn"
-                  onClick={() => setShowFriendsModal(true)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#00274C',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    textDecoration: 'underline'
-                  }}
-                >
-                  Manage
-                </button>
-              </div>
-              <div className="friends-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {friends.filter(f => f.isFriend).slice(0, 3).map((friend) => (
-                  <div key={friend.id} style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '8px',
-                    backgroundColor: '#f9f9f9',
-                    borderRadius: '6px'
-                  }}>
-                    <span style={{ fontSize: '20px' }}>{friend.avatar}</span>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: '#000' }}>{friend.name}</p>
-                      <p style={{ margin: 0, fontSize: '11px', color: '#666' }}>{friend.handle}</p>
-                    </div>
-                    <span style={{ fontSize: '14px', color: '#00274C' }}>✓</span>
-                  </div>
-                ))}
-              </div>
-              {friends.filter(f => f.isFriend).length > 3 && (
-                <p style={{ fontSize: '12px', color: '#666', marginTop: '8px', textAlign: 'center' }}>
-                  +{friends.filter(f => f.isFriend).length - 3} more friend(s)
-                </p>
-              )}
-            </div>
           </aside>
         </div>
       </main>
@@ -641,7 +538,7 @@ const Profile = () => {
             <div className="notifications-header">
               <h2>Notifications</h2>
               {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+                <button className="mark-all-read-btn" onClick={markAllAsRead}>Mark all as read</button>
               )}
             </div>
 
@@ -659,7 +556,7 @@ const Profile = () => {
                     </div>
                     <button
                       className="dismiss-btn"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                     >
                       ✕
                     </button>

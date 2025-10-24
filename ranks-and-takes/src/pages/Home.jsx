@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { useNotificationStore } from '../store/notificationStore';
 import '../styles/Pages.css';
 
 const Home = () => {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('feed');
   const [nbaGames, setNbaGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 23)); // Oct 23, 2025
@@ -17,58 +17,12 @@ const Home = () => {
   const [selectedTakeToShare, setSelectedTakeToShare] = useState(null);
   const [profilePicture] = useState(localStorage.getItem('userProfilePicture'));
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'like',
-      user: 'Sports Analyst',
-      action: 'liked your take',
-      message: '"The Celtics are the most complete team..."',
-      time: '2 minutes ago',
-      read: false,
-      avatar: '👨‍💼'
-    },
-    {
-      id: 2,
-      type: 'comment',
-      user: 'Hoops Lover',
-      action: 'replied to your take',
-      message: '"Great analysis! I totally agree."',
-      time: '15 minutes ago',
-      read: false,
-      avatar: '👩‍🦱'
-    },
-    {
-      id: 3,
-      type: 'follow',
-      user: 'Basketball Eyes',
-      action: 'started following you',
-      message: '',
-      time: '1 hour ago',
-      read: false,
-      avatar: '👨‍🦨'
-    },
-    {
-      id: 4,
-      type: 'rating',
-      user: 'Stats Nerd',
-      action: 'rated your take',
-      message: '8.5/10',
-      time: '3 hours ago',
-      read: true,
-      avatar: '👩‍💻'
-    },
-    {
-      id: 5,
-      type: 'mention',
-      user: 'NBA Analyst',
-      action: 'mentioned you in a take',
-      message: '"@user thoughts on MVP race?"',
-      time: '5 hours ago',
-      read: true,
-      avatar: '👨‍💼'
-    }
-  ]);
+
+  // Use shared notification store
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
   const [conversations, setConversations] = useState([
     {
       id: 1,
@@ -110,6 +64,9 @@ const Home = () => {
     }
   ]);
   const [selectedRatings, setSelectedRatings] = useState({});
+  const [likedTakes, setLikedTakes] = useState(new Set());
+  const [expandedComments, setExpandedComments] = useState({});
+  const [commentText, setCommentText] = useState({});
   const [takes, setTakes] = useState([
     {
       id: 1,
@@ -118,11 +75,16 @@ const Home = () => {
       avatar: '👨‍🦱',
       take: 'Jayson Tatum is the most underrated two-way player in the NBA right now',
       rank: 8.5,
+      ballKnowledge: 78,
       numRatings: 1203,
       timestamp: '2 hours ago',
       likes: 523,
       comments: 148,
-      tags: ['NBA', 'Celtics', 'Analysis']
+      tags: ['NBA', 'Celtics', 'Analysis'],
+      commentsList: [
+        { id: 1, author: 'HoopsLover', avatar: '👩‍🦱', text: 'Completely agree, his defense is underrated', timestamp: '1 hour ago' },
+        { id: 2, author: 'NBAAnalyst', avatar: '👨‍💼', text: 'Great take! The stats back this up', timestamp: '45 minutes ago' }
+      ]
     },
     {
       id: 2,
@@ -131,11 +93,15 @@ const Home = () => {
       avatar: '👩‍🦱',
       take: 'The Knicks will make the Finals within 2 years',
       rank: 7.2,
+      ballKnowledge: 72,
       numRatings: 856,
       timestamp: '4 hours ago',
       likes: 412,
       comments: 98,
-      tags: ['NBA', 'Knicks', 'Prediction']
+      tags: ['NBA', 'Knicks', 'Prediction'],
+      commentsList: [
+        { id: 1, author: 'CelticsFan', avatar: '☘️', text: 'Bold prediction! Excited to see if this happens', timestamp: '3 hours ago' }
+      ]
     },
     {
       id: 3,
@@ -144,11 +110,16 @@ const Home = () => {
       avatar: '👨‍💼',
       take: 'Advanced metrics show LeBron is still elite on defense',
       rank: 9.1,
+      ballKnowledge: 89,
       numRatings: 2103,
       timestamp: '6 hours ago',
       likes: 892,
       comments: 234,
-      tags: ['NBA', 'Lakers', 'Stats']
+      tags: ['NBA', 'Lakers', 'Stats'],
+      commentsList: [
+        { id: 1, author: 'StatsNerd', avatar: '📊', text: 'The advanced metrics really back this up', timestamp: '5 hours ago' },
+        { id: 2, author: 'BasketballEyes', avatar: '👀', text: 'VORP numbers are insane', timestamp: '4 hours ago' }
+      ]
     }
   ]);
 
@@ -162,8 +133,65 @@ const Home = () => {
   };
 
   const handleLikeTake = (id) => {
+    setTakes(prevTakes =>
+      prevTakes.map(take =>
+        take.id === id
+          ? {
+              ...take,
+              likes: likedTakes.has(id) ? take.likes - 1 : take.likes + 1
+            }
+          : take
+      )
+    );
+
+    setLikedTakes(prevLiked => {
+      const newLiked = new Set(prevLiked);
+      if (newLiked.has(id)) {
+        newLiked.delete(id);
+      } else {
+        newLiked.add(id);
+      }
+      return newLiked;
+    });
     console.log(`Liked take ${id}`);
     // TODO: Send like to backend
+  };
+
+  const handleCommentTake = (takeId) => {
+    setExpandedComments(prev => ({
+      ...prev,
+      [takeId]: !prev[takeId]
+    }));
+  };
+
+  const handleAddComment = (takeId) => {
+    const text = commentText[takeId] || '';
+    if (text.trim()) {
+      setTakes(prevTakes =>
+        prevTakes.map(take =>
+          take.id === takeId
+            ? {
+                ...take,
+                commentsList: [
+                  ...take.commentsList,
+                  {
+                    id: take.commentsList.length + 1,
+                    author: 'You',
+                    avatar: '👤',
+                    text: text,
+                    timestamp: 'now'
+                  }
+                ],
+                comments: take.comments + 1
+              }
+            : take
+        )
+      );
+      setCommentText(prev => ({
+        ...prev,
+        [takeId]: ''
+      }));
+    }
   };
 
   const handleSendMessage = () => {
@@ -186,26 +214,6 @@ const Home = () => {
 
       setMessageText('');
     }
-  };
-
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -298,32 +306,89 @@ const Home = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
       <main className="main-content">
+        {/* NBA Scores Scrollable Section - Full Width */}
+        <div className="nba-scores-scroll-section">
+          <div className="nba-scores-header">
+            <h3>🏀 NBA Games</h3>
+          </div>
+
+          {/* Scrollable Calendar */}
+          <div className="games-calendar-scroll">
+            <div className="calendar-dates">
+              {Array.from({ length: 21 }, (_, i) => {
+                const date = new Date(selectedDate);
+                date.setDate(date.getDate() - 10 + i);
+                const isSelected = date.toDateString() === selectedDate.toDateString();
+                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+
+                return (
+                  <button
+                    key={i}
+                    className={`calendar-date ${isSelected ? 'active' : ''}`}
+                    onClick={() => setSelectedDate(date)}
+                  >
+                    <span className="date-day">{dayStr}</span>
+                    <span className="date-number">{dateStr}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {loadingGames ? (
+            <div className="loading-state" style={{ padding: '16px' }}>
+              <p>Loading games...</p>
+            </div>
+          ) : nbaGames.length > 0 ? (
+            <div className="nba-games-scroll">
+              {nbaGames.map((game) => (
+                <div key={game.id} className="nba-game-card-mini">
+                  <div className="game-status">
+                    {game.status === 'Final' ? (
+                      <span className="status-badge final">Final</span>
+                    ) : game.status === 'In Progress' ? (
+                      <span className="status-badge live">Live</span>
+                    ) : (
+                      <span className="status-badge scheduled">Scheduled</span>
+                    )}
+                  </div>
+
+                  <div className="game-matchup-mini">
+                    <div className="team-mini">
+                      <div className="team-name-mini">{game.home_team?.full_name}</div>
+                      <div className="team-score-mini">{game.home_team_score || 0}</div>
+                    </div>
+
+                    <div className="vs-mini">VS</div>
+
+                    <div className="team-mini">
+                      <div className="team-name-mini">{game.visitor_team?.full_name}</div>
+                      <div className="team-score-mini">{game.visitor_team_score || 0}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ padding: '16px', color: '#999', textAlign: 'center' }}>
+              <p>No games scheduled</p>
+            </div>
+          )}
+        </div>
+
+        {/* Feed and Sidebar Side by Side */}
         <div className="content-wrapper">
           <div className="feed-section">
-            {/* Tabs */}
-            <div className="home-tabs">
-              <button
-                className={`tab ${activeTab === 'feed' ? 'active' : ''}`}
-                onClick={() => setActiveTab('feed')}
-              >
-                Feed
-              </button>
-              <button
-                className={`tab ${activeTab === 'nba-scores' ? 'active' : ''}`}
-                onClick={() => setActiveTab('nba-scores')}
-              >
-                🏀 NBA Scores
-              </button>
-            </div>
-
-            {/* Feed Tab */}
-            {activeTab === 'feed' && (
-              <>
-                <div className="create-take-box">
+            {/* Feed Content */}
+            <div className="create-take-box">
               <div className="create-header">
                 {profilePicture ? (
                   <img src={profilePicture} alt="Avatar" className="avatar-image" />
@@ -395,11 +460,14 @@ const Home = () => {
                   </div>
 
                   <div className="take-actions">
-                    <button className="action-btn">
+                    <button
+                      className="action-btn"
+                      onClick={() => handleCommentTake(take.id)}
+                    >
                       💬 {take.comments}
                     </button>
                     <button
-                      className="action-btn"
+                      className={`action-btn ${likedTakes.has(take.id) ? 'liked' : ''}`}
                       onClick={() => handleLikeTake(take.id)}
                     >
                       ❤️ {take.likes}
@@ -407,107 +475,76 @@ const Home = () => {
                     <button className="action-btn" onClick={() => handleShareTake(take)}>
                       ⤴️ Share
                     </button>
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#999' }}>{take.ballKnowledge}</span>
                   </div>
+
+                  {/* Top Comment Display */}
+                  {take.commentsList && take.commentsList.length > 0 && (
+                    <div className="top-comment-section">
+                      <div className="comment-divider"></div>
+                      <div className="top-comment">
+                        <div className="comment-header">
+                          <span className="comment-avatar">{take.commentsList[0].avatar}</span>
+                          <div className="comment-author-info">
+                            <p className="comment-author">{take.commentsList[0].author}</p>
+                            <p className="comment-time">{take.commentsList[0].timestamp}</p>
+                          </div>
+                        </div>
+                        <p className="comment-text">{take.commentsList[0].text}</p>
+                        {take.commentsList.length > 1 && (
+                          <button
+                            className="view-more-comments-btn"
+                            onClick={() => handleCommentTake(take.id)}
+                          >
+                            View {take.commentsList.length - 1} more comment{take.commentsList.length - 1 > 1 ? 's' : ''}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Comments Section */}
+                  {expandedComments[take.id] && (
+                    <div className="comments-section">
+                      <div className="comments-list">
+                        {take.commentsList.map((comment) => (
+                          <div key={comment.id} className="comment-item">
+                            <span className="comment-avatar">{comment.avatar}</span>
+                            <div className="comment-content">
+                              <div className="comment-header">
+                                <strong className="comment-author">{comment.author}</strong>
+                                <span className="comment-time">{comment.timestamp}</span>
+                              </div>
+                              <p className="comment-text">{comment.text}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="comment-input-box">
+                        <input
+                          type="text"
+                          placeholder="Add a comment..."
+                          value={commentText[take.id] || ''}
+                          onChange={(e) => setCommentText(prev => ({
+                            ...prev,
+                            [take.id]: e.target.value
+                          }))}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddComment(take.id)}
+                          className="comment-input"
+                        />
+                        <button
+                          className="comment-submit-btn"
+                          onClick={() => handleAddComment(take.id)}
+                        >
+                          Post
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-              </>
-            )}
-
-            {/* NBA Scores Tab */}
-            {activeTab === 'nba-scores' && (
-              <div className="nba-scores-section">
-                <div className="nba-header">
-                  <h2>NBA Games</h2>
-                  <p>Real-time scores and game updates</p>
-                </div>
-
-                {/* Scrollable Calendar */}
-                <div className="games-calendar-scroll">
-                  <div className="calendar-dates">
-                    {Array.from({ length: 14 }, (_, i) => {
-                      const date = new Date(selectedDate);
-                      date.setDate(date.getDate() - 7 + i);
-                      const isSelected = date.toDateString() === selectedDate.toDateString();
-                      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                      const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
-
-                      return (
-                        <button
-                          key={i}
-                          className={`calendar-date ${isSelected ? 'active' : ''}`}
-                          onClick={() => setSelectedDate(date)}
-                        >
-                          <span className="date-day">{dayStr}</span>
-                          <span className="date-number">{dateStr}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {loadingGames ? (
-                  <div className="loading-state">
-                    <p>Loading games...</p>
-                  </div>
-                ) : nbaGames.length > 0 ? (
-                  <div className="nba-games-list">
-                    {nbaGames.map((game) => (
-                      <div key={game.id} className="nba-game-card">
-                        <div className="game-status">
-                          {game.status === 'Final' ? (
-                            <span className="status-badge final">Final</span>
-                          ) : game.status === 'In Progress' ? (
-                            <span className="status-badge live">Live</span>
-                          ) : (
-                            <span className="status-badge scheduled">Scheduled</span>
-                          )}
-                        </div>
-
-                        <div className="game-matchup">
-                          <div className="team home-team">
-                            <div className="team-name">{game.home_team?.full_name}</div>
-                            <div className="team-score">{game.home_team_score || 0}</div>
-                          </div>
-
-                          <div className="game-vs">
-                            <span className="vs-text">VS</span>
-                          </div>
-
-                          <div className="team away-team">
-                            <div className="team-name">{game.visitor_team?.full_name}</div>
-                            <div className="team-score">{game.visitor_team_score || 0}</div>
-                          </div>
-                        </div>
-
-                        <div className="game-details">
-                          <p className="game-date">
-                            {new Date(game.date).toLocaleDateString()} {' '}
-                            {new Date(game.date).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </p>
-                          {game.period > 0 && game.status !== 'Final' && (
-                            <p className="game-period">Q{game.period}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="empty-state">
-                    <p>😴 No games available right now</p>
-                    <small>Check back later for upcoming games</small>
-                  </div>
-                )}
-
-                <div className="api-credit">
-                  <small>Data provided by BallDontLie API</small>
-                </div>
-              </div>
-            )}
-
           </div>
 
           {/* Sidebar */}
@@ -517,19 +554,31 @@ const Home = () => {
               <div className="news-sidebar-list">
                 <div className="news-sidebar-item">
                   <p className="news-sidebar-title">Celtics Extend Win Streak to 12 Games</p>
-                  <p className="news-sidebar-source">NBA.com • 2 hours ago</p>
+                  <div className="news-sidebar-footer">
+                    <a href="#" className="news-source">NBA.com</a>
+                    <span className="news-time">2 hours ago</span>
+                  </div>
                 </div>
                 <div className="news-sidebar-item">
                   <p className="news-sidebar-title">Luka Doncic Breaks Career Scoring Record</p>
-                  <p className="news-sidebar-source">ESPN • 4 hours ago</p>
+                  <div className="news-sidebar-footer">
+                    <a href="#" className="news-source">ESPN</a>
+                    <span className="news-time">4 hours ago</span>
+                  </div>
                 </div>
                 <div className="news-sidebar-item">
                   <p className="news-sidebar-title">Lakers Trade Rumors Heating Up</p>
-                  <p className="news-sidebar-source">The Athletic • 6 hours ago</p>
+                  <div className="news-sidebar-footer">
+                    <a href="#" className="news-source">The Athletic</a>
+                    <span className="news-time">6 hours ago</span>
+                  </div>
                 </div>
                 <div className="news-sidebar-item">
                   <p className="news-sidebar-title">Jayson Tatum Named All-Star Starter</p>
-                  <p className="news-sidebar-source">NBA.com • 8 hours ago</p>
+                  <div className="news-sidebar-footer">
+                    <a href="#" className="news-source">NBA.com</a>
+                    <span className="news-time">8 hours ago</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -693,7 +742,7 @@ const Home = () => {
               <h2>Notifications</h2>
               <div className="notifications-actions">
                 {unreadCount > 0 && (
-                  <button className="mark-all-btn" onClick={handleMarkAllAsRead}>
+                  <button className="mark-all-btn" onClick={markAllAsRead}>
                     Mark all as read
                   </button>
                 )}
@@ -718,7 +767,7 @@ const Home = () => {
                     </div>
                     <button
                       className="notification-dismiss"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                       title="Dismiss"
                     >
                       ✕

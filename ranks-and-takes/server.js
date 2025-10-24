@@ -3,13 +3,48 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(uploadsDir));
 
 // Database setup
 const db = new sqlite3.Database(path.join(__dirname, 'database.db'), (err) => {
@@ -32,9 +67,11 @@ function initializeDatabase() {
       password TEXT NOT NULL,
       displayName TEXT NOT NULL,
       avatar TEXT,
+      banner TEXT,
       bio TEXT,
       followers INTEGER DEFAULT 0,
       following INTEGER DEFAULT 0,
+      ballKnowledge INTEGER DEFAULT 50,
       createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `, (err) => {
@@ -117,18 +154,18 @@ function initializeDatabase() {
 // Create default users
 function createDefaultUsers() {
   const users = [
-    { username: 'tester', email: 'tester@example.com', password: 'tester123', displayName: 'Tester Account', avatar: '👤' },
-    { username: 'arnav', email: 'arnav@example.com', password: 'arnav123', displayName: 'Arnav', avatar: '👨‍💼' },
-    { username: 'rohit', email: 'rohit@example.com', password: 'rohit123', displayName: 'Rohit', avatar: '👨‍💻' }
+    { username: 'tester', email: 'tester@example.com', password: 'tester123', displayName: 'Tester Account', avatar: '👤', ballKnowledge: 75 },
+    { username: 'arnav', email: 'arnav@example.com', password: 'arnav123', displayName: 'Arnav', avatar: '👨‍💼', ballKnowledge: 85 },
+    { username: 'rohit', email: 'rohit@example.com', password: 'rohit123', displayName: 'Rohit', avatar: '👨‍💻', ballKnowledge: 92 }
   ];
 
   users.forEach(user => {
     const hashedPassword = bcrypt.hashSync(user.password, 10);
     db.run(
-      `INSERT OR IGNORE INTO users (username, email, password, displayName, avatar) VALUES (?, ?, ?, ?, ?)`,
-      [user.username, user.email, hashedPassword, user.displayName, user.avatar],
+      `INSERT OR IGNORE INTO users (username, email, password, displayName, avatar, ballKnowledge) VALUES (?, ?, ?, ?, ?, ?)`,
+      [user.username, user.email, hashedPassword, user.displayName, user.avatar, user.ballKnowledge],
       (err) => {
-        if (!err) console.log(`  → User ${user.username} ready`);
+        if (!err) console.log(`  → User ${user.username} ready (Ball Knowledge: ${user.ballKnowledge})`);
       }
     );
   });
@@ -279,7 +316,7 @@ function insertPlayersData() {
 
 // USERS
 app.get('/api/users', (req, res) => {
-  db.all(`SELECT id, username, email, displayName, avatar, bio, followers, following, createdAt FROM users`, (err, rows) => {
+  db.all(`SELECT id, username, email, displayName, avatar, banner, bio, followers, following, ballKnowledge, createdAt FROM users`, (err, rows) => {
     if (err) res.status(500).json({ error: err.message });
     else res.json(rows);
   });
@@ -288,12 +325,23 @@ app.get('/api/users', (req, res) => {
 app.get('/api/users/:username', (req, res) => {
   const { username } = req.params;
   db.get(
-    `SELECT id, username, email, displayName, avatar, bio, followers, following, createdAt FROM users WHERE username = ?`,
+    `SELECT id, username, email, displayName, avatar, banner, bio, followers, following, ballKnowledge, createdAt FROM users WHERE username = ?`,
     [username],
     (err, row) => {
       if (err) res.status(500).json({ error: err.message });
       else if (!row) res.status(404).json({ error: 'User not found' });
       else res.json(row);
+    }
+  );
+});
+
+// Leaderboard - users by ball knowledge score
+app.get('/api/leaderboard', (req, res) => {
+  db.all(
+    `SELECT id, username, displayName, avatar, ballKnowledge, followers FROM users ORDER BY ballKnowledge DESC LIMIT 100`,
+    (err, rows) => {
+      if (err) res.status(500).json({ error: err.message });
+      else res.json(rows || []);
     }
   );
 });
@@ -323,10 +371,10 @@ app.post('/api/users', (req, res) => {
 
 app.put('/api/users/:username', (req, res) => {
   const { username } = req.params;
-  const { displayName, avatar, bio } = req.body;
+  const { displayName, avatar, banner, bio } = req.body;
   db.run(
-    `UPDATE users SET displayName = ?, avatar = ?, bio = ? WHERE username = ?`,
-    [displayName, avatar, bio, username],
+    `UPDATE users SET displayName = ?, avatar = ?, banner = ?, bio = ? WHERE username = ?`,
+    [displayName, avatar, banner, bio, username],
     function(err) {
       if (err) res.status(500).json({ error: err.message });
       else if (this.changes === 0) res.status(404).json({ error: 'User not found' });
@@ -341,7 +389,7 @@ app.post('/api/login', (req, res) => {
     return res.status(400).json({ error: 'Username and password required' });
   }
   db.get(
-    `SELECT id, username, email, displayName, avatar, bio, followers, following FROM users WHERE username = ?`,
+    `SELECT id, username, email, displayName, avatar, banner, bio, followers, following, ballKnowledge FROM users WHERE username = ?`,
     [username],
     (err, user) => {
       if (err) {
@@ -494,6 +542,197 @@ app.get('/api/teams/conference/:conference', (req, res) => {
     (err, rows) => {
       if (err) res.status(500).json({ error: err.message });
       else res.json(rows || []);
+    }
+  );
+});
+
+// TRENDING TAKES - Trending algorithm based on engagement metrics
+app.get('/api/trending-takes', (req, res) => {
+  // Mock trending takes with engagement scores
+  // In a real app, this would calculate based on likes, comments, views, and recency
+  const trendingTakes = [
+    {
+      id: 1,
+      author: 'SportsNerd23',
+      displayName: 'James Chen',
+      avatar: '👨‍🦱',
+      take: 'Jayson Tatum is the most underrated two-way player in the NBA right now',
+      rank: 8.5,
+      ballKnowledge: 78,
+      likes: 1523,
+      comments: 348,
+      views: 15203,
+      engagement: 1871,
+      trendingScore: 95,
+      timestamp: '2 hours ago'
+    },
+    {
+      id: 2,
+      author: 'KnicksFan92',
+      displayName: 'Maria Rodriguez',
+      avatar: '👩‍🦱',
+      take: 'The Knicks will make the Finals within 2 years',
+      rank: 7.2,
+      ballKnowledge: 72,
+      likes: 1412,
+      comments: 498,
+      views: 12856,
+      engagement: 1910,
+      trendingScore: 89,
+      timestamp: '4 hours ago'
+    },
+    {
+      id: 3,
+      author: 'AnalyticsBro',
+      displayName: 'Alex Kim',
+      avatar: '👨‍💼',
+      take: 'Advanced metrics show LeBron is still elite on defense',
+      rank: 9.1,
+      ballKnowledge: 89,
+      likes: 2892,
+      comments: 634,
+      views: 28903,
+      engagement: 3526,
+      trendingScore: 98,
+      timestamp: '6 hours ago'
+    },
+    {
+      id: 4,
+      author: 'HoopsAnalyst',
+      displayName: 'Mike Johnson',
+      avatar: '📊',
+      take: 'Denver Nuggets depth is unmatched in Western Conference',
+      rank: 8.8,
+      ballKnowledge: 85,
+      likes: 987,
+      comments: 234,
+      views: 9876,
+      engagement: 1221,
+      trendingScore: 85,
+      timestamp: '8 hours ago'
+    },
+    {
+      id: 5,
+      author: 'BasketballEyes',
+      displayName: 'Sarah Williams',
+      avatar: '👀',
+      take: 'Shai Gilgeous-Alexander is a top 5 NBA talent',
+      rank: 8.3,
+      ballKnowledge: 81,
+      likes: 1654,
+      comments: 412,
+      views: 16540,
+      engagement: 2066,
+      trendingScore: 91,
+      timestamp: '12 hours ago'
+    }
+  ];
+
+  // Sort by trendingScore (engagement + recency weighted algorithm)
+  res.json(trendingTakes.sort((a, b) => b.trendingScore - a.trendingScore));
+});
+
+// IMAGE UPLOAD ENDPOINTS
+// Upload profile picture
+app.post('/api/users/:username/avatar', upload.single('avatar'), (req, res) => {
+  const { username } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const avatarUrl = `/uploads/${req.file.filename}`;
+
+  db.run(
+    `UPDATE users SET avatar = ? WHERE username = ?`,
+    [avatarUrl, username],
+    function(err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else if (this.changes === 0) {
+        // Delete uploaded file if user not found
+        fs.unlink(req.file.path, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting file:', unlinkErr);
+        });
+        res.status(404).json({ error: 'User not found' });
+      } else {
+        res.json({
+          message: 'Avatar uploaded successfully',
+          avatarUrl: avatarUrl,
+          filename: req.file.filename
+        });
+      }
+    }
+  );
+});
+
+// Upload banner
+app.post('/api/users/:username/banner', upload.single('banner'), (req, res) => {
+  const { username } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const bannerUrl = `/uploads/${req.file.filename}`;
+
+  db.run(
+    `UPDATE users SET banner = ? WHERE username = ?`,
+    [bannerUrl, username],
+    function(err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else if (this.changes === 0) {
+        // Delete uploaded file if user not found
+        fs.unlink(req.file.path, (unlinkErr) => {
+          if (unlinkErr) console.error('Error deleting file:', unlinkErr);
+        });
+        res.status(404).json({ error: 'User not found' });
+      } else {
+        res.json({
+          message: 'Banner uploaded successfully',
+          bannerUrl: bannerUrl,
+          filename: req.file.filename
+        });
+      }
+    }
+  );
+});
+
+// Delete avatar
+app.delete('/api/users/:username/avatar', (req, res) => {
+  const { username } = req.params;
+
+  db.run(
+    `UPDATE users SET avatar = ? WHERE username = ?`,
+    [null, username],
+    function(err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else if (this.changes === 0) {
+        res.status(404).json({ error: 'User not found' });
+      } else {
+        res.json({ message: 'Avatar deleted successfully' });
+      }
+    }
+  );
+});
+
+// Delete banner
+app.delete('/api/users/:username/banner', (req, res) => {
+  const { username } = req.params;
+
+  db.run(
+    `UPDATE users SET banner = ? WHERE username = ?`,
+    [null, username],
+    function(err) {
+      if (err) {
+        res.status(500).json({ error: err.message });
+      } else if (this.changes === 0) {
+        res.status(404).json({ error: 'User not found' });
+      } else {
+        res.json({ message: 'Banner deleted successfully' });
+      }
     }
   );
 });

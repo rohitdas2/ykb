@@ -11,16 +11,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotificationStore } from '../store/notificationStore';
 import '../styles/Pages.css';
 
 const PlayerStats = () => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
+  const [teams, setTeamsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('all');
   const [sortBy, setSortBy] = useState('ppg');
   const [sortDirection, setSortDirection] = useState('desc');
+  const [activeTab, setActiveTab] = useState('players');
   const [showDMs, setShowDMs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -65,48 +68,10 @@ const PlayerStats = () => {
       ]
     }
   ]);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'stat_update',
-      user: 'NBA Stats',
-      action: 'posted new player stats',
-      message: 'Season averages updated for 150+ players',
-      time: '10 minutes ago',
-      read: false,
-      avatar: '📊'
-    },
-    {
-      id: 2,
-      type: 'milestone',
-      user: 'Player Alert',
-      action: 'milestone reached',
-      message: 'LeBron James reached 40,000 career points',
-      time: '1 hour ago',
-      read: false,
-      avatar: '🏀'
-    },
-    {
-      id: 3,
-      type: 'ranking',
-      user: 'Rankings Update',
-      action: 'updated player rankings',
-      message: 'Top 10 players reshuffled after last night',
-      time: '3 hours ago',
-      read: true,
-      avatar: '📈'
-    },
-    {
-      id: 4,
-      type: 'comment',
-      user: 'Stats Nerd',
-      action: 'commented on player comparison',
-      message: 'Great analysis on the PPG leaders',
-      time: '5 hours ago',
-      read: true,
-      avatar: '🤓'
-    }
-  ]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
   useEffect(() => {
     fetchPlayers();
@@ -115,32 +80,37 @@ const PlayerStats = () => {
   const fetchPlayers = async () => {
     setLoading(true);
     try {
-      // Fetch player totals from NBA Stats API (https://api.server.nbaapi.com/)
-      // Licensed under MIT License
-      const response = await fetch('https://api.server.nbaapi.com/api/playertotals?pageSize=100');
-      const data = await response.json();
+      // Fetch all players from our backend API
+      const playersResponse = await fetch('http://localhost:5000/api/players');
+      const playersData = await playersResponse.json();
 
-      if (data.data && data.data.length > 0) {
-        // Filter current season players and calculate per-game stats
-        const playersWithStats = data.data
-          .map(player => ({
-            ...player,
-            // Calculate per-game averages (ensure values are numbers for sorting)
-            ppg: player.games > 0 ? parseFloat((player.points / player.games).toFixed(1)) : 0,
-            rpg: player.games > 0 ? parseFloat((player.totalRb / player.games).toFixed(1)) : 0,
-            apg: player.games > 0 ? parseFloat((player.assists / player.games).toFixed(1)) : 0,
-            spg: player.games > 0 ? parseFloat((player.steals / player.games).toFixed(1)) : 0,
-            bpg: player.games > 0 ? parseFloat((player.blocks / player.games).toFixed(1)) : 0,
-            // Format shooting percentages
-            fgPercent: (player.fieldPercent * 100).toFixed(1),
-            ftPercent: (player.ftPercent * 100).toFixed(1),
-            threePercent: (player.threePercent * 100).toFixed(1),
-          }));
+      if (playersData && playersData.length > 0) {
+        // Format players data for consistent display
+        const playersWithStats = playersData.map(player => ({
+          ...player,
+          // Ensure stats are numbers for sorting
+          ppg: Number(player.ppg) || 0,
+          rpg: Number(player.rpg) || 0,
+          apg: Number(player.apg) || 0,
+          spg: Number(player.spg) || 0,
+          bpg: Number(player.bpg) || 0,
+          fgPercent: Number(player.fgPercent) || 0,
+          threePercent: Number(player.threePercent) || 0,
+          ftPercent: Number(player.ftPercent) || 0,
+        }));
 
         setPlayers(playersWithStats);
       }
+
+      // Fetch teams data
+      const teamsResponse = await fetch('http://localhost:5000/api/teams');
+      const teamsData = await teamsResponse.json();
+      if (teamsData && teamsData.length > 0) {
+        setTeamsData(teamsData);
+      }
     } catch (error) {
-      console.error('Error fetching player stats:', error);
+      console.error('Error fetching stats:', error);
+      setPlayers([]);
     } finally {
       setLoading(false);
     }
@@ -180,7 +150,23 @@ const PlayerStats = () => {
     console.log('Comparing:', first.playerName, 'value:', first[sortBy], 'vs', second?.playerName, 'value:', second?.[sortBy]);
   }
 
-  const teams = [...new Set(players.map(p => p.team).filter(Boolean))].sort();
+  const uniqueTeams = [...new Set(players.map(p => p.team).filter(Boolean))].sort();
+
+  // Top performances from the last week (mock data)
+  const topPerformances = [
+    { id: 1, playerName: 'Luka Doncic', team: 'Dallas Mavericks', points: 42, rebounds: 11, assists: 9, date: '2 days ago' },
+    { id: 2, playerName: 'Jayson Tatum', team: 'Boston Celtics', points: 39, rebounds: 10, assists: 6, date: '3 days ago' },
+    { id: 3, playerName: 'Giannis Antetokounmpo', team: 'Milwaukee Bucks', points: 38, rebounds: 14, assists: 5, date: '4 days ago' },
+    { id: 4, playerName: 'Kevin Durant', team: 'Phoenix Suns', points: 36, rebounds: 8, assists: 4, date: '5 days ago' },
+    { id: 5, playerName: 'Stephen Curry', team: 'Golden State Warriors', points: 40, rebounds: 5, assists: 10, date: '6 days ago' },
+  ];
+
+  // Sort teams by wins for display
+  const sortedTeams = teams.slice().sort((a, b) => {
+    const teamA = teams.find(t => t.teamName === a);
+    const teamB = teams.find(t => t.teamName === b);
+    return (teamB?.wins || 0) - (teamA?.wins || 0);
+  });
 
   const handleSendMessage = () => {
     if (messageText.trim() && selectedConversation !== null) {
@@ -206,26 +192,6 @@ const PlayerStats = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
-  };
-
   return (
     <div className="page-container">
       <header className="app-header">
@@ -249,6 +215,9 @@ const PlayerStats = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
@@ -256,8 +225,24 @@ const PlayerStats = () => {
         <div className="content-wrapper">
           <div className="feed-section">
             <div className="page-title">
-              <h2>NBA Player Stats</h2>
-              <p>Real-time player statistics and performance data</p>
+              <h2>NBA Stats</h2>
+              <p>Player and team statistics</p>
+            </div>
+
+            {/* Stats Tabs */}
+            <div className="stats-tabs">
+              <button
+                className={`stats-tab ${activeTab === 'players' ? 'active' : ''}`}
+                onClick={() => setActiveTab('players')}
+              >
+                Player Stats
+              </button>
+              <button
+                className={`stats-tab ${activeTab === 'teams' ? 'active' : ''}`}
+                onClick={() => setActiveTab('teams')}
+              >
+                Team Stats
+              </button>
             </div>
 
             <div className="stats-filters">
@@ -279,13 +264,16 @@ const PlayerStats = () => {
                   className="filter-select"
                 >
                   <option value="all">All Teams</option>
-                  {teams.map(team => (
+                  {uniqueTeams.map(team => (
                     <option key={team} value={team}>{team}</option>
                   ))}
                 </select>
               </div>
             </div>
 
+            {/* Player Stats Tab */}
+            {activeTab === 'players' && (
+              <>
             {loading ? (
               <div className="loading-state">
                 <p>Loading player stats...</p>
@@ -384,62 +372,96 @@ const PlayerStats = () => {
               <p><strong>SPG</strong> = Steals Per Game | <strong>BPG</strong> = Blocks Per Game | <strong>Games</strong> = Games Played</p>
               <small>Data provided by NBA Stats API (https://api.server.nbaapi.com/) - Licensed under MIT</small>
             </div>
+              </>
+            )}
+
+            {/* Team Stats Tab */}
+            {activeTab === 'teams' && (
+              <>
+                {loading ? (
+                  <div className="loading-state">
+                    <p>Loading team stats...</p>
+                  </div>
+                ) : teams.length > 0 ? (
+                  <div className="stats-container">
+                    <div className="stats-table-wrapper">
+                      <table className="stats-table">
+                        <thead>
+                          <tr>
+                            <th>Team</th>
+                            <th>City</th>
+                            <th>Wins</th>
+                            <th>Losses</th>
+                            <th>Win %</th>
+                            <th>PPG</th>
+                            <th>Conference</th>
+                            <th>Division</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {teams.map((team, idx) => (
+                            <tr
+                              key={`${team.teamName}-${idx}`}
+                              className={`${idx % 2 === 0 ? 'even' : 'odd'} clickable-row`}
+                              onClick={() => navigate(`/team/${team.abbreviation}`)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              <td className="player-name">
+                                <span className="rank-badge">{idx + 1}</span>
+                                {team.teamName}
+                              </td>
+                              <td>{team.city}</td>
+                              <td className="stat-cell"><strong>{team.wins || 0}</strong></td>
+                              <td className="stat-cell">{team.losses || 0}</td>
+                              <td className="stat-cell">{((team.winPercent || 0) * 100).toFixed(1)}%</td>
+                              <td className="stat-cell highlight">{(team.pointsPerGame || 0).toFixed(1)}</td>
+                              <td>{team.conference || 'N/A'}</td>
+                              <td>{team.division || 'N/A'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <p>No teams available</p>
+                  </div>
+                )}
+                <div className="stats-legend">
+                  <h4>Legend:</h4>
+                  <p><strong>PPG</strong> = Points Per Game | <strong>Win %</strong> = Winning Percentage</p>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-card">
-              <h3>Top Performers</h3>
+              <h3>Top Performances (Last Week)</h3>
               <div className="top-performers">
-                {filteredPlayers.slice(0, 5).map((player, idx) => (
+                {topPerformances.map((performance, idx) => (
                   <div
-                    key={`top-performer-${player.playerName}-${idx}`}
+                    key={`top-performance-${performance.id}`}
                     className="performer-item"
-                    onClick={() => navigate(`/player/${encodeURIComponent(player.playerName)}`)}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="rank-circle">{idx + 1}</div>
                     <div className="performer-info">
-                      <p className="name">{player.playerName}</p>
-                      <p className="team">{player.team}</p>
+                      <p className="name">{performance.playerName}</p>
+                      <p className="team">{performance.team}</p>
+                      <p className="performance-stats" style={{ fontSize: '11px', color: '#999', marginTop: '4px' }}>
+                        {performance.points}pts {performance.rebounds}reb {performance.assists}ast
+                      </p>
+                      <p className="performance-date" style={{ fontSize: '10px', color: '#bbb', marginTop: '2px' }}>
+                        {performance.date}
+                      </p>
                     </div>
-                    <div className="ppg-badge">{player.ppg} PPG</div>
+                    <div className="ppg-badge">{performance.points}</div>
                   </div>
                 ))}
               </div>
-            </div>
-
-            <div className="sidebar-card">
-              <h3>Stats Overview</h3>
-              <div className="overview-stats">
-                <div className="overview-item">
-                  <p className="label">Total Players</p>
-                  <p className="value">{filteredPlayers.length}</p>
-                </div>
-                <div className="overview-item">
-                  <p className="label">Avg PPG</p>
-                  <p className="value">
-                    {filteredPlayers.length > 0
-                      ? (filteredPlayers.reduce((sum, p) => sum + parseFloat(p.ppg), 0) / filteredPlayers.length).toFixed(1)
-                      : 0}
-                  </p>
-                </div>
-                <div className="overview-item">
-                  <p className="label">Avg RPG</p>
-                  <p className="value">
-                    {filteredPlayers.length > 0
-                      ? (filteredPlayers.reduce((sum, p) => sum + parseFloat(p.rpg), 0) / filteredPlayers.length).toFixed(1)
-                      : 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="sidebar-card">
-              <h3>About These Stats</h3>
-              <p style={{ fontSize: '13px', color: '#666', margin: 0 }}>
-                Statistics are calculated from the latest available game data. Averages are computed per player from their recent games.
-              </p>
             </div>
           </aside>
         </div>
@@ -452,7 +474,7 @@ const PlayerStats = () => {
             <div className="notifications-header">
               <h2>Notifications</h2>
               {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+                <button className="mark-all-read-btn" onClick={markAllAsRead}>Mark all as read</button>
               )}
             </div>
 
@@ -470,7 +492,7 @@ const PlayerStats = () => {
                     </div>
                     <button
                       className="dismiss-btn"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                     >
                       ✕
                     </button>

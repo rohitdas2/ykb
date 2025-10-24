@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useNotificationStore } from '../store/notificationStore';
 import '../styles/Pages.css';
 
 const Search = () => {
@@ -12,6 +13,8 @@ const Search = () => {
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
+  const [trendingTakes, setTrendingTakes] = useState([]);
+  const [loadingTrending, setLoadingTrending] = useState(false);
   const [conversations, setConversations] = useState([
     {
       id: 1,
@@ -52,87 +55,61 @@ const Search = () => {
       ]
     }
   ]);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'search',
-      user: 'Search Alert',
-      action: 'new results available',
-      message: 'New players matching your saved searches',
-      time: '30 minutes ago',
-      read: false,
-      avatar: '🔍'
-    },
-    {
-      id: 2,
-      type: 'trending',
-      user: 'Trending Search',
-      action: 'trending topic',
-      message: '#MVPRace is now trending in searches',
-      time: '2 hours ago',
-      read: false,
-      avatar: '📈'
-    },
-    {
-      id: 3,
-      type: 'saved',
-      user: 'Saved Search',
-      action: 'saved search updated',
-      message: 'Your saved player search has new matches',
-      time: '5 hours ago',
-      read: true,
-      avatar: '⭐'
-    },
-    {
-      id: 4,
-      type: 'popular',
-      user: 'Popular Now',
-      action: 'popular search',
-      message: 'Luka Doncic is most searched today',
-      time: '1 day ago',
-      read: true,
-      avatar: '🔥'
-    }
-  ]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
-  const handleSearch = (e) => {
+  const handleSearch = async (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       setHasSearched(true);
-      // TODO: Call backend API with search query
-      console.log('Searching for:', searchQuery, 'Type:', searchType);
+      try {
+        // Fetch all players and teams from backend
+        const playersResponse = await fetch('http://localhost:5000/api/players');
+        const teamsResponse = await fetch('http://localhost:5000/api/teams');
 
-      // Mock results
-      setResults([
-        {
-          id: 1,
-          type: 'player',
-          name: 'Jayson Tatum',
-          team: 'Boston Celtics',
-          icon: '🏀'
-        },
-        {
-          id: 2,
-          type: 'player',
-          name: 'LeBron James',
-          team: 'Los Angeles Lakers',
-          icon: '🏀'
-        },
-        {
-          id: 3,
-          type: 'team',
-          name: 'Boston Celtics',
-          record: '64-18',
-          icon: '🏆'
-        },
-        {
-          id: 4,
-          type: 'user',
-          name: 'Basketball Analysis',
-          handle: '@basketballanalysis',
-          icon: '👤'
-        }
-      ]);
+        const playersData = await playersResponse.json();
+        const teamsData = await teamsResponse.json();
+
+        const query = searchQuery.toLowerCase();
+        const results = [];
+
+        // Filter and add matching players
+        playersData.forEach((player, idx) => {
+          if (player.playerName.toLowerCase().includes(query)) {
+            results.push({
+              id: `player-${idx}`,
+              type: 'player',
+              name: player.playerName,
+              team: player.team,
+              icon: '🏀',
+              data: player
+            });
+          }
+        });
+
+        // Filter and add matching teams
+        teamsData.forEach((team, idx) => {
+          if (team.teamName.toLowerCase().includes(query)) {
+            const record = `${team.wins}-${team.losses}`;
+            results.push({
+              id: `team-${idx}`,
+              type: 'team',
+              name: team.teamName,
+              record: record,
+              icon: '🏆',
+              data: team
+            });
+          }
+        });
+
+        setResults(results);
+        console.log('Search results:', results);
+      } catch (error) {
+        console.error('Error searching:', error);
+        setResults([]);
+      }
     }
   };
 
@@ -158,27 +135,26 @@ const Search = () => {
     }
   };
 
+  // Fetch trending takes on component mount
+  React.useEffect(() => {
+    const fetchTrendingTakes = async () => {
+      setLoadingTrending(true);
+      try {
+        const response = await fetch('http://localhost:5000/api/trending-takes');
+        const data = await response.json();
+        setTrendingTakes(data.slice(0, 5)); // Get top 5 trending
+      } catch (error) {
+        console.error('Error fetching trending takes:', error);
+        setTrendingTakes([]);
+      } finally {
+        setLoadingTrending(false);
+      }
+    };
+
+    fetchTrendingTakes();
+  }, []);
+
   const unreadCount = notifications.filter(n => !n.read).length;
-
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
-  };
 
 
   return (
@@ -203,6 +179,9 @@ const Search = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
@@ -225,68 +204,41 @@ const Search = () => {
                   autoFocus
                 />
               </div>
-
-              <div className="search-filters">
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'all' ? 'active' : ''}`}
-                  onClick={() => setSearchType('all')}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'players' ? 'active' : ''}`}
-                  onClick={() => setSearchType('players')}
-                >
-                  Players
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'teams' ? 'active' : ''}`}
-                  onClick={() => setSearchType('teams')}
-                >
-                  Teams
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'users' ? 'active' : ''}`}
-                  onClick={() => setSearchType('users')}
-                >
-                  Users
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'takes' ? 'active' : ''}`}
-                  onClick={() => setSearchType('takes')}
-                >
-                  Takes
-                </button>
-              </div>
             </form>
 
             {!hasSearched ? (
               <div className="search-suggestions">
                 <div className="suggestions-section">
-                  <h3>Trending Topics</h3>
-                  <div className="search-list">
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#MVPRace</span>
-                    </button>
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#Draft2024</span>
-                    </button>
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#Playoffs</span>
-                    </button>
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#TradeRumors</span>
-                    </button>
-                  </div>
+                  <h3>🔥 Trending Takes</h3>
+                  {loadingTrending ? (
+                    <p style={{ padding: '16px', color: '#999' }}>Loading trending takes...</p>
+                  ) : trendingTakes.length > 0 ? (
+                    <div className="trending-takes-list">
+                      {trendingTakes.map((take) => (
+                        <div key={take.id} className="trending-take-item">
+                          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '20px' }}>{take.avatar}</span>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ margin: 0, fontWeight: '600', fontSize: '14px' }}>{take.displayName}</p>
+                              <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>@{take.author}</p>
+                            </div>
+                            <span style={{ fontSize: '18px', color: '#ff6b35' }}>🔥 {take.trendingScore}</span>
+                          </div>
+                          <p style={{ margin: '8px 0', fontSize: '13px', color: '#333', lineHeight: '1.4' }}>
+                            {take.take}
+                          </p>
+                          <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: '#999' }}>
+                            <span>❤️ {take.likes}</span>
+                            <span>💬 {take.comments}</span>
+                            <span>👁️ {take.views}</span>
+                            <span style={{ marginLeft: 'auto' }}>{take.ballKnowledge}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ padding: '16px', color: '#999' }}>No trending takes available</p>
+                  )}
                 </div>
               </div>
             ) : (
@@ -340,15 +292,6 @@ const Search = () => {
                 </ul>
               </div>
             </div>
-
-            <div className="sidebar-card">
-              <h3>Quick Links</h3>
-              <div className="quick-links">
-                <a href="/rankings" className="link">📊 View All Rankings</a>
-                <a href="/trending" className="link">🔥 Trending Now</a>
-                <a href="/home" className="link">🏠 Home Feed</a>
-              </div>
-            </div>
           </aside>
         </div>
       </main>
@@ -360,7 +303,7 @@ const Search = () => {
             <div className="notifications-header">
               <h2>Notifications</h2>
               {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+                <button className="mark-all-read-btn" onClick={markAllAsRead}>Mark all as read</button>
               )}
             </div>
 
@@ -378,7 +321,7 @@ const Search = () => {
                     </div>
                     <button
                       className="dismiss-btn"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                     >
                       ✕
                     </button>

@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useNotificationStore } from '../store/notificationStore';
 import '../styles/Pages.css';
 
 const PlayerDetail = () => {
@@ -61,38 +62,10 @@ const PlayerDetail = () => {
       ]
     }
   ]);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'player_update',
-      user: 'Player Stats',
-      action: 'updated stats',
-      message: 'Latest game stats added for this player',
-      time: '20 minutes ago',
-      read: false,
-      avatar: '📊'
-    },
-    {
-      id: 2,
-      type: 'performance',
-      user: 'Game Alert',
-      action: 'milestone achieved',
-      message: 'Player scored 30+ points in last game',
-      time: '2 hours ago',
-      read: false,
-      avatar: '🔥'
-    },
-    {
-      id: 3,
-      type: 'comment',
-      user: 'Hoops Fan',
-      action: 'commented on player',
-      message: 'This player is underrated!',
-      time: '4 hours ago',
-      read: true,
-      avatar: '💬'
-    }
-  ]);
+  const notifications = useNotificationStore((state) => state.notifications);
+  const markNotificationAsRead = useNotificationStore((state) => state.markNotificationAsRead);
+  const dismissNotification = useNotificationStore((state) => state.dismissNotification);
+  const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
   useEffect(() => {
     fetchPlayerData();
@@ -170,26 +143,6 @@ const PlayerDetail = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleMarkNotificationAsRead = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif =>
-        notif.id === notificationId ? { ...notif, read: true } : notif
-      )
-    );
-  };
-
-  const handleDismissNotification = (notificationId) => {
-    setNotifications(prevNotifications =>
-      prevNotifications.filter(notif => notif.id !== notificationId)
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prevNotifications =>
-      prevNotifications.map(notif => ({ ...notif, read: true }))
-    );
-  };
-
   if (loading) {
     return (
       <div className="page-container">
@@ -208,6 +161,9 @@ const PlayerDetail = () => {
           </div>
           <div className="header-right">
             <button className="btn btn-icon">🔔</button>
+            <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+              ⋮
+            </button>
           </div>
         </header>
         <main className="main-content">
@@ -235,6 +191,9 @@ const PlayerDetail = () => {
           </div>
           <div className="header-right">
             <button className="btn btn-icon">🔔</button>
+            <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+              ⋮
+            </button>
           </div>
         </header>
         <main className="main-content">
@@ -268,6 +227,9 @@ const PlayerDetail = () => {
               <span className="notification-badge">{unreadCount}</span>
             )}
           </div>
+          <button className="btn btn-icon" title="Settings" style={{ fontSize: '20px', fontWeight: 'bold', padding: '8px 12px', minWidth: 'auto' }}>
+            ⋮
+          </button>
         </div>
       </header>
 
@@ -512,7 +474,7 @@ const PlayerDetail = () => {
             <div className="notifications-header">
               <h2>Notifications</h2>
               {unreadCount > 0 && (
-                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+                <button className="mark-all-read-btn" onClick={markAllAsRead}>Mark all as read</button>
               )}
             </div>
 
@@ -530,7 +492,7 @@ const PlayerDetail = () => {
                     </div>
                     <button
                       className="dismiss-btn"
-                      onClick={() => handleDismissNotification(notif.id)}
+                      onClick={() => dismissNotification(notif.id)}
                     >
                       ✕
                     </button>
