@@ -9,6 +9,7 @@ const Search = () => {
   const [results, setResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [showDMs, setShowDMs] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [conversations, setConversations] = useState([
@@ -49,6 +50,48 @@ const Search = () => {
       messages: [
         { id: 1, sender: 'Basketball Eyes', text: 'Check out my latest analysis', timestamp: '1 day ago', isOwn: false }
       ]
+    }
+  ]);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'search',
+      user: 'Search Alert',
+      action: 'new results available',
+      message: 'New players matching your saved searches',
+      time: '30 minutes ago',
+      read: false,
+      avatar: '🔍'
+    },
+    {
+      id: 2,
+      type: 'trending',
+      user: 'Trending Search',
+      action: 'trending topic',
+      message: '#MVPRace is now trending in searches',
+      time: '2 hours ago',
+      read: false,
+      avatar: '📈'
+    },
+    {
+      id: 3,
+      type: 'saved',
+      user: 'Saved Search',
+      action: 'saved search updated',
+      message: 'Your saved player search has new matches',
+      time: '5 hours ago',
+      read: true,
+      avatar: '⭐'
+    },
+    {
+      id: 4,
+      type: 'popular',
+      user: 'Popular Now',
+      action: 'popular search',
+      message: 'Luka Doncic is most searched today',
+      time: '1 day ago',
+      read: true,
+      avatar: '🔥'
     }
   ]);
 
@@ -115,6 +158,28 @@ const Search = () => {
     }
   };
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleMarkNotificationAsRead = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif =>
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const handleDismissNotification = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.filter(notif => notif.id !== notificationId)
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif => ({ ...notif, read: true }))
+    );
+  };
+
   const recentSearches = [
     'Luka Doncic',
     'Celtics vs Lakers',
@@ -139,7 +204,12 @@ const Search = () => {
         </div>
         <div className="header-right">
           <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
-          <button className="btn btn-icon">🔔</button>
+          <div className="notification-button-wrapper">
+            <button className="btn btn-icon notification-btn" onClick={() => setShowNotifications(!showNotifications)}>🔔</button>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -331,6 +401,48 @@ const Search = () => {
           </aside>
         </div>
       </main>
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="notifications-modal-overlay" onClick={() => setShowNotifications(false)}>
+          <div className="notifications-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="notifications-header">
+              <h2>Notifications</h2>
+              {unreadCount > 0 && (
+                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+              )}
+            </div>
+
+            <div className="notifications-list">
+              {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                  <div key={notif.id} className={`notification-item ${notif.read ? '' : 'unread'}`}>
+                    <div className="notification-avatar">{notif.avatar}</div>
+                    <div className="notification-content">
+                      <p className="notification-text">
+                        <strong>{notif.user}</strong> {notif.action}
+                      </p>
+                      <p className="notification-message">{notif.message}</p>
+                      <span className="notification-time">{notif.time}</span>
+                    </div>
+                    <button
+                      className="dismiss-btn"
+                      onClick={() => handleDismissNotification(notif.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <p>🔔 No notifications yet</p>
+                  <small>Check back soon for updates</small>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DM Modal */}
       {showDMs && (

@@ -15,6 +15,60 @@ const Home = () => {
   const [messageText, setMessageText] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedTakeToShare, setSelectedTakeToShare] = useState(null);
+  const [profilePicture] = useState(localStorage.getItem('userProfilePicture'));
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'like',
+      user: 'Sports Analyst',
+      action: 'liked your take',
+      message: '"The Celtics are the most complete team..."',
+      time: '2 minutes ago',
+      read: false,
+      avatar: '👨‍💼'
+    },
+    {
+      id: 2,
+      type: 'comment',
+      user: 'Hoops Lover',
+      action: 'replied to your take',
+      message: '"Great analysis! I totally agree."',
+      time: '15 minutes ago',
+      read: false,
+      avatar: '👩‍🦱'
+    },
+    {
+      id: 3,
+      type: 'follow',
+      user: 'Basketball Eyes',
+      action: 'started following you',
+      message: '',
+      time: '1 hour ago',
+      read: false,
+      avatar: '👨‍🦨'
+    },
+    {
+      id: 4,
+      type: 'rating',
+      user: 'Stats Nerd',
+      action: 'rated your take',
+      message: '8.5/10',
+      time: '3 hours ago',
+      read: true,
+      avatar: '👩‍💻'
+    },
+    {
+      id: 5,
+      type: 'mention',
+      user: 'NBA Analyst',
+      action: 'mentioned you in a take',
+      message: '"@user thoughts on MVP race?"',
+      time: '5 hours ago',
+      read: true,
+      avatar: '👨‍💼'
+    }
+  ]);
   const [conversations, setConversations] = useState([
     {
       id: 1,
@@ -129,6 +183,28 @@ const Home = () => {
     }
   };
 
+  const handleMarkNotificationAsRead = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif =>
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const handleDismissNotification = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.filter(notif => notif.id !== notificationId)
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif => ({ ...notif, read: true }))
+    );
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   const handleShareTake = (take) => {
     setSelectedTakeToShare(take);
     setShowShareModal(true);
@@ -209,7 +285,14 @@ const Home = () => {
         </div>
         <div className="header-right">
           <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
-          <button className="btn btn-icon">🔔</button>
+          <div className="notification-button-wrapper">
+            <button className="btn btn-icon notification-btn" onClick={() => setShowNotifications(!showNotifications)}>
+              🔔
+            </button>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -237,16 +320,23 @@ const Home = () => {
               <>
                 <div className="create-take-box">
               <div className="create-header">
-                <span className="avatar">👤</span>
-                <input
-                  type="text"
-                  placeholder="What's your take on basketball?"
-                  className="create-input"
-                  onClick={() => {
-                    // TODO: Open take creation modal
-                    console.log('Open create take modal');
-                  }}
-                />
+                {profilePicture ? (
+                  <img src={profilePicture} alt="Avatar" className="avatar-image" />
+                ) : (
+                  <span className="avatar">👤</span>
+                )}
+                <div className="create-input-wrapper">
+                  <input
+                    type="text"
+                    placeholder="What's your take on basketball?"
+                    className="create-input"
+                    onClick={() => {
+                      // TODO: Open take creation modal
+                      console.log('Open create take modal');
+                    }}
+                  />
+                  <span className="input-arrow">→</span>
+                </div>
               </div>
             </div>
 
@@ -418,23 +508,23 @@ const Home = () => {
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-card">
-              <h3>Trending Topics</h3>
-              <div className="trending-list">
-                <div className="trending-item">
-                  <p className="trending-tag">#MVP Race</p>
-                  <p className="trending-stats">45K takes</p>
+              <h3>NBA News</h3>
+              <div className="news-sidebar-list">
+                <div className="news-sidebar-item">
+                  <p className="news-sidebar-title">Celtics Extend Win Streak to 12 Games</p>
+                  <p className="news-sidebar-source">NBA.com • 2 hours ago</p>
                 </div>
-                <div className="trending-item">
-                  <p className="trending-tag">#Draft 2024</p>
-                  <p className="trending-stats">32K takes</p>
+                <div className="news-sidebar-item">
+                  <p className="news-sidebar-title">Luka Doncic Breaks Career Scoring Record</p>
+                  <p className="news-sidebar-source">ESPN • 4 hours ago</p>
                 </div>
-                <div className="trending-item">
-                  <p className="trending-tag">#Playoffs</p>
-                  <p className="trending-stats">28K takes</p>
+                <div className="news-sidebar-item">
+                  <p className="news-sidebar-title">Lakers Trade Rumors Heating Up</p>
+                  <p className="news-sidebar-source">The Athletic • 6 hours ago</p>
                 </div>
-                <div className="trending-item">
-                  <p className="trending-tag">#TradeRumors</p>
-                  <p className="trending-stats">19K takes</p>
+                <div className="news-sidebar-item">
+                  <p className="news-sidebar-title">Jayson Tatum Named All-Star Starter</p>
+                  <p className="news-sidebar-source">NBA.com • 8 hours ago</p>
                 </div>
               </div>
             </div>
@@ -583,6 +673,57 @@ const Home = () => {
               {selectedConversation === null && (
                 <div className="dm-empty">
                   <p>Select a conversation to start chatting</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="notifications-modal-overlay" onClick={() => setShowNotifications(false)}>
+          <div className="notifications-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="notifications-header">
+              <h2>Notifications</h2>
+              <div className="notifications-actions">
+                {unreadCount > 0 && (
+                  <button className="mark-all-btn" onClick={handleMarkAllAsRead}>
+                    Mark all as read
+                  </button>
+                )}
+                <button className="close-btn" onClick={() => setShowNotifications(false)}>✕</button>
+              </div>
+            </div>
+
+            <div className="notifications-list">
+              {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                  <div key={notif.id} className={`notification-item ${notif.read ? 'read' : 'unread'}`}>
+                    <div className="notification-avatar">{notif.avatar}</div>
+                    <div className="notification-content">
+                      <div className="notification-header-text">
+                        <p className="notification-user">{notif.user}</p>
+                        <span className="notification-time">{notif.time}</span>
+                      </div>
+                      <p className="notification-action">{notif.action}</p>
+                      {notif.message && (
+                        <p className="notification-message">{notif.message}</p>
+                      )}
+                    </div>
+                    <button
+                      className="notification-dismiss"
+                      onClick={() => handleDismissNotification(notif.id)}
+                      title="Dismiss"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="notifications-empty">
+                  <p>🔔 No notifications yet</p>
+                  <small>You're all caught up!</small>
                 </div>
               )}
             </div>

@@ -16,6 +16,7 @@ const Profile = () => {
   const [likedTakes, setLikedTakes] = useState(new Set());
   const [actionStates, setActionStates] = useState(new Map());
   const [showDMs, setShowDMs] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [conversations, setConversations] = useState([
@@ -64,6 +65,49 @@ const Profile = () => {
     { id: 3, name: 'Basketball Eyes', handle: '@basketballeyes', avatar: '👨‍🦨', isFriend: true },
   ]);
   const [showFriendsModal, setShowFriendsModal] = useState(false);
+  const [profilePicture, setProfilePicture] = useState(localStorage.getItem('userProfilePicture') || null);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'follow',
+      user: 'Basketball Pro',
+      action: 'started following you',
+      message: 'They liked your recent activity',
+      time: '15 minutes ago',
+      read: false,
+      avatar: '👤'
+    },
+    {
+      id: 2,
+      type: 'like',
+      user: 'Stats Guru',
+      action: 'liked your take',
+      message: 'Your Celtics analysis is on point',
+      time: '1 hour ago',
+      read: false,
+      avatar: '❤️'
+    },
+    {
+      id: 3,
+      type: 'achievement',
+      user: 'Ranks & Takes',
+      action: 'achievement unlocked',
+      message: 'You reached 20+ takes milestone',
+      time: '2 hours ago',
+      read: true,
+      avatar: '🏆'
+    },
+    {
+      id: 4,
+      type: 'comment',
+      user: 'Hoops Fan',
+      action: 'commented on your profile',
+      message: 'Love your consistent posting!',
+      time: '4 hours ago',
+      read: true,
+      avatar: '💬'
+    }
+  ]);
 
   const handleLogout = () => {
     logout();
@@ -76,6 +120,24 @@ const Profile = () => {
         friend.id === friendId ? { ...friend, isFriend: !friend.isFriend } : friend
       )
     );
+  };
+
+  const handleProfilePictureUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64String = event.target?.result;
+        setProfilePicture(base64String);
+        localStorage.setItem('userProfilePicture', base64String);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeProfilePicture = () => {
+    setProfilePicture(null);
+    localStorage.removeItem('userProfilePicture');
   };
 
   const handleLike = (takeId) => {
@@ -120,6 +182,28 @@ const Profile = () => {
 
       setMessageText('');
     }
+  };
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleMarkNotificationAsRead = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif =>
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const handleDismissNotification = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.filter(notif => notif.id !== notificationId)
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif => ({ ...notif, read: true }))
+    );
   };
 
   const userScores = [
@@ -172,7 +256,12 @@ const Profile = () => {
         </div>
         <div className="header-right">
           <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
-          <button className="btn btn-icon">🔔</button>
+          <div className="notification-button-wrapper">
+            <button className="btn btn-icon notification-btn" onClick={() => setShowNotifications(!showNotifications)}>🔔</button>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -182,7 +271,24 @@ const Profile = () => {
           </div>
 
           <div className="profile-info">
-            <div className="profile-avatar">👤</div>
+            <div className="profile-avatar-container">
+              {profilePicture ? (
+                <img src={profilePicture} alt="Profile" className="profile-avatar-image" />
+              ) : (
+                <div className="profile-avatar">👤</div>
+              )}
+              {isEditing && (
+                <label className="profile-avatar-upload">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfilePictureUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <span>📷</span>
+                </label>
+              )}
+            </div>
             <div className="profile-details">
               <h2>{user?.displayName || 'Your Name'}</h2>
               <p className="profile-username">@{user?.username || 'username'}</p>
@@ -227,6 +333,35 @@ const Profile = () => {
           <div className="edit-profile-section">
             <h3>Edit Profile</h3>
             <form className="edit-form">
+              <div className="form-group">
+                <label>Profile Picture</label>
+                <div className="profile-picture-section">
+                  <div className="picture-preview">
+                    {profilePicture ? (
+                      <>
+                        <img src={profilePicture} alt="Profile" style={{ maxHeight: '150px', borderRadius: '8px' }} />
+                        <button type="button" className="btn btn-danger" onClick={removeProfilePicture} style={{ marginTop: '12px', width: '100%' }}>
+                          Remove Picture
+                        </button>
+                      </>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '24px', color: '#999' }}>
+                        <p style={{ fontSize: '48px', margin: '0 0 12px 0' }}>📷</p>
+                        <p style={{ margin: 0, fontSize: '14px' }}>No picture uploaded</p>
+                      </div>
+                    )}
+                  </div>
+                  <label className="upload-button">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProfilePictureUpload}
+                      style={{ display: 'none' }}
+                    />
+                    <span>Choose Image</span>
+                  </label>
+                </div>
+              </div>
               <div className="form-group">
                 <label>Display Name</label>
                 <input type="text" defaultValue={user?.displayName} />
@@ -498,6 +633,48 @@ const Profile = () => {
           </aside>
         </div>
       </main>
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="notifications-modal-overlay" onClick={() => setShowNotifications(false)}>
+          <div className="notifications-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="notifications-header">
+              <h2>Notifications</h2>
+              {unreadCount > 0 && (
+                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+              )}
+            </div>
+
+            <div className="notifications-list">
+              {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                  <div key={notif.id} className={`notification-item ${notif.read ? '' : 'unread'}`}>
+                    <div className="notification-avatar">{notif.avatar}</div>
+                    <div className="notification-content">
+                      <p className="notification-text">
+                        <strong>{notif.user}</strong> {notif.action}
+                      </p>
+                      <p className="notification-message">{notif.message}</p>
+                      <span className="notification-time">{notif.time}</span>
+                    </div>
+                    <button
+                      className="dismiss-btn"
+                      onClick={() => handleDismissNotification(notif.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <p>🔔 No notifications yet</p>
+                  <small>Check back soon for updates</small>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Friends Management Modal */}
       {showFriendsModal && (

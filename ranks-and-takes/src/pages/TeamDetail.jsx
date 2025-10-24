@@ -18,6 +18,7 @@ const TeamDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDMs, setShowDMs] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
   const [conversations, setConversations] = useState([
@@ -58,6 +59,38 @@ const TeamDetail = () => {
       messages: [
         { id: 1, sender: 'Basketball Eyes', text: 'Check out my latest analysis', timestamp: '1 day ago', isOwn: false }
       ]
+    }
+  ]);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      type: 'team_update',
+      user: 'Team News',
+      action: 'roster update',
+      message: 'Team added new player to active roster',
+      time: '1 hour ago',
+      read: false,
+      avatar: '🏀'
+    },
+    {
+      id: 2,
+      type: 'game_result',
+      user: 'Game Alert',
+      action: 'game completed',
+      message: 'Team won 120-105 in last night\'s game',
+      time: '3 hours ago',
+      read: false,
+      avatar: '🏆'
+    },
+    {
+      id: 3,
+      type: 'standings',
+      user: 'League Update',
+      action: 'standings changed',
+      message: 'Team moved up to 2nd place in conference',
+      time: '1 day ago',
+      read: true,
+      avatar: '📊'
     }
   ]);
 
@@ -189,6 +222,28 @@ const TeamDetail = () => {
     }
   };
 
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const handleMarkNotificationAsRead = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif =>
+        notif.id === notificationId ? { ...notif, read: true } : notif
+      )
+    );
+  };
+
+  const handleDismissNotification = (notificationId) => {
+    setNotifications(prevNotifications =>
+      prevNotifications.filter(notif => notif.id !== notificationId)
+    );
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prevNotifications =>
+      prevNotifications.map(notif => ({ ...notif, read: true }))
+    );
+  };
+
   if (loading) {
     return (
       <div className="page-container">
@@ -261,7 +316,12 @@ const TeamDetail = () => {
         </div>
         <div className="header-right">
           <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
-          <button className="btn btn-icon">🔔</button>
+          <div className="notification-button-wrapper">
+            <button className="btn btn-icon notification-btn" onClick={() => setShowNotifications(!showNotifications)}>🔔</button>
+            {unreadCount > 0 && (
+              <span className="notification-badge">{unreadCount}</span>
+            )}
+          </div>
         </div>
       </header>
 
@@ -428,6 +488,48 @@ const TeamDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* Notifications Modal */}
+      {showNotifications && (
+        <div className="notifications-modal-overlay" onClick={() => setShowNotifications(false)}>
+          <div className="notifications-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="notifications-header">
+              <h2>Notifications</h2>
+              {unreadCount > 0 && (
+                <button className="mark-all-read-btn" onClick={handleMarkAllAsRead}>Mark all as read</button>
+              )}
+            </div>
+
+            <div className="notifications-list">
+              {notifications.length > 0 ? (
+                notifications.map((notif) => (
+                  <div key={notif.id} className={`notification-item ${notif.read ? '' : 'unread'}`}>
+                    <div className="notification-avatar">{notif.avatar}</div>
+                    <div className="notification-content">
+                      <p className="notification-text">
+                        <strong>{notif.user}</strong> {notif.action}
+                      </p>
+                      <p className="notification-message">{notif.message}</p>
+                      <span className="notification-time">{notif.time}</span>
+                    </div>
+                    <button
+                      className="dismiss-btn"
+                      onClick={() => handleDismissNotification(notif.id)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <p>🔔 No notifications yet</p>
+                  <small>Check back soon for updates</small>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DM Modal */}
       {showDMs && (
