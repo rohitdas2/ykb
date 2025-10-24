@@ -89,10 +89,6 @@ const Profile = () => {
                   <span className="stat-value">#247</span>
                   <span className="stat-label">Overall Rank</span>
                 </div>
-                <div className="stat">
-                  <span className="stat-value">34</span>
-                  <span className="stat-label">Takes</span>
-                </div>
                 <div className="stat" style={{ cursor: 'pointer' }} onClick={() => setShowFollowers(true)}>
                   <span className="stat-value" style={{ color: '#00274C' }}>2.4K</span>
                   <span className="stat-label">Followers</span>
@@ -291,14 +287,22 @@ const Profile = () => {
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-card">
+              <h3>Takes</h3>
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#00274C', margin: '0 0 8px 0' }}>34</p>
+                <p style={{ fontSize: '12px', color: '#999', marginTop: '12px' }}>Posts created</p>
+              </div>
+            </div>
+
+            <div className="sidebar-card">
               <h3>Games Watched</h3>
               <div className="stat-bar-item">
                 <div className="stat-bar-header">
                   <span className="stat-bar-label">Progress</span>
-                  <span className="stat-bar-value">248 / 300</span>
+                  <span className="stat-bar-value">67 / 82</span>
                 </div>
                 <div className="stat-bar-container">
-                  <div className="stat-bar-progress" style={{ width: '82.67%' }}></div>
+                  <div className="stat-bar-progress" style={{ width: '81.71%' }}></div>
                 </div>
                 <p style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>Games watched this season</p>
               </div>
