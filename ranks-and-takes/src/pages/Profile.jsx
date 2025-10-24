@@ -81,6 +81,7 @@ const Profile = () => {
               <h2>{user?.displayName || 'Your Name'}</h2>
               <p className="profile-username">@{user?.username || 'username'}</p>
               <p className="profile-bio">Basketball enthusiast & takes connoisseur</p>
+              <p className="profile-joined">Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}</p>
               <div className="profile-stats">
                 <div className="stat">
                   <span className="stat-value">#247</span>
