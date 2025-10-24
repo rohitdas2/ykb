@@ -19,6 +19,8 @@ const PlayerStats = () => {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTeam, setSelectedTeam] = useState('all');
+  const [sortBy, setSortBy] = useState('ppg');
+  const [sortDirection, setSortDirection] = useState('desc');
 
   useEffect(() => {
     fetchPlayers();
@@ -37,18 +39,17 @@ const PlayerStats = () => {
         const playersWithStats = data.data
           .map(player => ({
             ...player,
-            // Calculate per-game averages
-            ppg: player.games > 0 ? (player.points / player.games).toFixed(1) : 0,
-            rpg: player.games > 0 ? (player.totalRb / player.games).toFixed(1) : 0,
-            apg: player.games > 0 ? (player.assists / player.games).toFixed(1) : 0,
-            spg: player.games > 0 ? (player.steals / player.games).toFixed(1) : 0,
-            bpg: player.games > 0 ? (player.blocks / player.games).toFixed(1) : 0,
+            // Calculate per-game averages (ensure values are numbers for sorting)
+            ppg: player.games > 0 ? parseFloat((player.points / player.games).toFixed(1)) : 0,
+            rpg: player.games > 0 ? parseFloat((player.totalRb / player.games).toFixed(1)) : 0,
+            apg: player.games > 0 ? parseFloat((player.assists / player.games).toFixed(1)) : 0,
+            spg: player.games > 0 ? parseFloat((player.steals / player.games).toFixed(1)) : 0,
+            bpg: player.games > 0 ? parseFloat((player.blocks / player.games).toFixed(1)) : 0,
             // Format shooting percentages
             fgPercent: (player.fieldPercent * 100).toFixed(1),
             ftPercent: (player.ftPercent * 100).toFixed(1),
             threePercent: (player.threePercent * 100).toFixed(1),
-          }))
-          .sort((a, b) => parseFloat(b.ppg) - parseFloat(a.ppg));
+          }));
 
         setPlayers(playersWithStats);
       }
@@ -59,11 +60,39 @@ const PlayerStats = () => {
     }
   };
 
-  const filteredPlayers = players.filter(player => {
-    const matchesSearch = player.playerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTeam = selectedTeam === 'all' || (player.team === selectedTeam);
-    return matchesSearch && matchesTeam;
-  });
+  const handleSortClick = (stat) => {
+    console.log('handleSortClick called with:', stat, 'current sortBy:', sortBy);
+    if (sortBy === stat) {
+      setSortDirection(sortDirection === 'desc' ? 'asc' : 'desc');
+      console.log('toggling direction');
+    } else {
+      setSortBy(stat);
+      setSortDirection('desc');
+      console.log('setting new sort stat to:', stat);
+    }
+  };
+
+  const filteredPlayers = players
+    .filter(player => {
+      const matchesSearch = player.playerName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesTeam = selectedTeam === 'all' || (player.team === selectedTeam);
+      return matchesSearch && matchesTeam;
+    })
+    .sort((a, b) => {
+      const aValue = Number(a[sortBy]) || 0;
+      const bValue = Number(b[sortBy]) || 0;
+      const result = sortDirection === 'desc' ? bValue - aValue : aValue - bValue;
+      return result;
+    });
+
+  console.log('RENDER: sortBy=', sortBy, 'direction=', sortDirection);
+  if (filteredPlayers.length > 0) {
+    const first = filteredPlayers[0];
+    const second = filteredPlayers[1];
+    console.log('First player:', first.playerName, 'all props:', Object.keys(first).slice(0, 15));
+    console.log('PPG value:', first.ppg, 'RPG value:', first.rpg, 'APG value:', first.apg);
+    console.log('Comparing:', first.playerName, 'value:', first[sortBy], 'vs', second?.playerName, 'value:', second?.[sortBy]);
+  }
 
   const teams = [...new Set(players.map(p => p.team).filter(Boolean))].sort();
 
@@ -78,7 +107,7 @@ const PlayerStats = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item active">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item">Trending</a>
+            <a href="/trending" className="nav-item">Search</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -134,17 +163,58 @@ const PlayerStats = () => {
                         <th>Player</th>
                         <th>Team</th>
                         <th>Position</th>
-                        <th>PPG</th>
-                        <th>RPG</th>
-                        <th>APG</th>
-                        <th>SPG</th>
-                        <th>BPG</th>
-                        <th>Games</th>
+                        <th
+                          className={`sortable-header ${sortBy === 'ppg' ? 'active' : ''}`}
+                          onClick={() => handleSortClick('ppg')}
+                          title="Click to sort by PPG"
+                        >
+                          PPG {sortBy === 'ppg' && (sortDirection === 'desc' ? '↓' : '↑')}
+                        </th>
+                        <th
+                          className={`sortable-header ${sortBy === 'rpg' ? 'active' : ''}`}
+                          onClick={() => handleSortClick('rpg')}
+                          title="Click to sort by RPG"
+                        >
+                          RPG {sortBy === 'rpg' && (sortDirection === 'desc' ? '↓' : '↑')}
+                        </th>
+                        <th
+                          className={`sortable-header ${sortBy === 'apg' ? 'active' : ''}`}
+                          onClick={() => handleSortClick('apg')}
+                          title="Click to sort by APG"
+                        >
+                          APG {sortBy === 'apg' && (sortDirection === 'desc' ? '↓' : '↑')}
+                        </th>
+                        <th
+                          className={`sortable-header ${sortBy === 'spg' ? 'active' : ''}`}
+                          onClick={() => handleSortClick('spg')}
+                          title="Click to sort by SPG"
+                        >
+                          SPG {sortBy === 'spg' && (sortDirection === 'desc' ? '↓' : '↑')}
+                        </th>
+                        <th
+                          className={`sortable-header ${sortBy === 'bpg' ? 'active' : ''}`}
+                          onClick={() => handleSortClick('bpg')}
+                          title="Click to sort by BPG"
+                        >
+                          BPG {sortBy === 'bpg' && (sortDirection === 'desc' ? '↓' : '↑')}
+                        </th>
+                        <th
+                          className={`sortable-header ${sortBy === 'games' ? 'active' : ''}`}
+                          onClick={() => handleSortClick('games')}
+                          title="Click to sort by Games"
+                        >
+                          Games {sortBy === 'games' && (sortDirection === 'desc' ? '↓' : '↑')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredPlayers.map((player, idx) => (
-                        <tr key={player.playerId} className={idx % 2 === 0 ? 'even' : 'odd'}>
+                        <tr
+                          key={`${player.playerName}-${idx}`}
+                          className={`${idx % 2 === 0 ? 'even' : 'odd'} clickable-row`}
+                          onClick={() => navigate(`/player/${encodeURIComponent(player.playerName)}`)}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <td className="player-name">
                             <span className="rank-badge">{idx + 1}</span>
                             {player.playerName}
@@ -186,7 +256,12 @@ const PlayerStats = () => {
               <h3>Top Performers</h3>
               <div className="top-performers">
                 {filteredPlayers.slice(0, 5).map((player, idx) => (
-                  <div key={player.playerId} className="performer-item">
+                  <div
+                    key={`top-performer-${player.playerName}-${idx}`}
+                    className="performer-item"
+                    onClick={() => navigate(`/player/${encodeURIComponent(player.playerName)}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className="rank-circle">{idx + 1}</div>
                     <div className="performer-info">
                       <p className="name">{player.playerName}</p>

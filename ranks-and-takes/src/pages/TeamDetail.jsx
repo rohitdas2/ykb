@@ -136,7 +136,7 @@ const TeamDetail = () => {
               <a href="/rankings" className="nav-item">Rankings</a>
               <a href="/player-stats" className="nav-item">Player Stats</a>
               <a href="/home" className="nav-item">Home</a>
-              <a href="/trending" className="nav-item">Trending</a>
+              <a href="/trending" className="nav-item">Search</a>
               <a href="/profile" className="nav-item">Profile</a>
             </nav>
           </div>
@@ -163,7 +163,7 @@ const TeamDetail = () => {
               <a href="/rankings" className="nav-item">Rankings</a>
               <a href="/player-stats" className="nav-item">Player Stats</a>
               <a href="/home" className="nav-item">Home</a>
-              <a href="/trending" className="nav-item">Trending</a>
+              <a href="/trending" className="nav-item">Search</a>
               <a href="/profile" className="nav-item">Profile</a>
             </nav>
           </div>
@@ -190,7 +190,7 @@ const TeamDetail = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item">Trending</a>
+            <a href="/trending" className="nav-item">Search</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -207,7 +207,7 @@ const TeamDetail = () => {
             <div className="team-detail-header">
               <div className="team-info">
                 <h1>🏀 {teamStats.teamName}</h1>
-                <p className="team-meta">{teamStats.team} • {teamStats.players} Players</p>
+                <p className="team-meta">{teamStats.team} • {teamStats.players} Players • Season 2025</p>
               </div>
             </div>
 
@@ -288,6 +288,69 @@ const TeamDetail = () => {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Trending Takes Section */}
+            <div className="trending-takes-section">
+              <h2>Trending Takes About {teamStats.teamName}</h2>
+              <div className="takes-list">
+                {[
+                  {
+                    id: 1,
+                    author: 'TeamAnalyst',
+                    displayName: 'Team Analyst',
+                    avatar: '👨‍💼',
+                    take: `${teamStats.teamName} is the most complete team in the league this season`,
+                    rank: 9.1,
+                    numRatings: 2156,
+                    likes: 1087,
+                    comments: 245
+                  },
+                  {
+                    id: 2,
+                    author: 'CoachsTake',
+                    displayName: 'Coach\'s Take',
+                    avatar: '🏀',
+                    take: `${teamStats.teamName}'s depth at every position is unmatched in 2025`,
+                    rank: 8.8,
+                    numRatings: 1943,
+                    likes: 921,
+                    comments: 178
+                  },
+                  {
+                    id: 3,
+                    author: 'StrengthCoach',
+                    displayName: 'Strength Coach',
+                    avatar: '💪',
+                    take: `${teamStats.teamName}'s defensive intensity sets them apart from the rest`,
+                    rank: 9.0,
+                    numRatings: 2034,
+                    likes: 1023,
+                    comments: 189
+                  }
+                ].map((take) => (
+                  <div key={take.id} className="take-card">
+                    <div className="take-header">
+                      <div className="take-author">
+                        <span className="avatar">{take.avatar}</span>
+                        <div>
+                          <p className="author-name">{take.displayName}</p>
+                          <p className="author-handle">@{take.author}</p>
+                        </div>
+                      </div>
+                      <div className="take-rank">
+                        <span className="rank-badge">{take.rank}</span>
+                      </div>
+                    </div>
+                    <p className="take-content">{take.take}</p>
+                    <div className="take-stats">
+                      <span className="stat">❤️ {take.likes}</span>
+                      <span className="stat">💬 {take.comments}</span>
+                      <span className="stat">⭐ {take.numRatings} ratings</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

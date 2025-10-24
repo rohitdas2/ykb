@@ -12,99 +12,159 @@ const Trending = () => {
   const [searchResults, setSearchResults] = useState([]);
   const [hasSearched, setHasSearched] = useState(false);
 
-  const trendingTopics = [
-    {
-      id: 1,
-      tag: '#MVPRace',
-      takes: 45230,
-      trend: '↑ 12%',
-      description: 'Who deserves MVP this season?',
-      icon: '🏆'
-    },
-    {
-      id: 2,
-      tag: '#CelticsRevolution',
-      takes: 38920,
-      trend: '↑ 8%',
-      description: 'Best team in the league discussion',
-      icon: '🟢'
-    },
-    {
-      id: 3,
-      tag: '#LakeShow',
-      takes: 32150,
-      trend: '↑ 5%',
-      description: 'Lakers championship contention',
-      icon: '🟣'
-    },
-    {
-      id: 4,
-      tag: '#TradeDeadline',
-      takes: 28940,
-      trend: '↑ 15%',
-      description: 'Team upgrades and rumors',
-      icon: '🔄'
-    },
-    {
-      id: 5,
-      tag: '#PlayoffRun',
-      takes: 25100,
-      trend: '→ 2%',
-      description: 'Playoff seeding and matchups',
-      icon: '🏅'
-    },
-    {
-      id: 6,
-      tag: '#Draft2024',
-      takes: 19230,
-      trend: '↑ 22%',
-      description: 'Upcoming draft picks and prospects',
-      icon: '🎯'
-    },
-  ];
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      performSearch(searchQuery, searchType);
+    }
+  };
 
-  const trendingPlayers = [
-    {
-      id: 1,
-      name: 'Jayson Tatum',
-      team: 'Celtics',
-      mentions: 12340,
-      trend: '↑ 18%',
-      icon: '🏀'
-    },
-    {
-      id: 2,
-      name: 'Luka Doncic',
-      team: 'Mavericks',
-      mentions: 11200,
-      trend: '↑ 10%',
-      icon: '🏀'
-    },
-    {
-      id: 3,
-      name: 'Giannis Antetokounmpo',
-      team: 'Bucks',
-      mentions: 9800,
-      trend: '↑ 7%',
-      icon: '🏀'
-    },
-    {
-      id: 4,
-      name: 'LeBron James',
-      team: 'Lakers',
-      mentions: 8900,
-      trend: '↓ 3%',
-      icon: '🏀'
-    },
-    {
-      id: 5,
-      name: 'Damian Lillard',
-      team: 'Trail Blazers',
-      mentions: 7650,
-      trend: '↑ 25%',
-      icon: '🏀'
-    },
-  ];
+  const performSearch = (query, type = searchType) => {
+    if (!query.trim()) return;
+
+    const queryLower = query.toLowerCase().trim();
+    console.log('Searching for:', query, 'Type:', type);
+
+    // Create all possible results
+    const allResults = [
+      // Players
+      {
+        id: 1,
+        type: 'player',
+        name: 'Jayson Tatum',
+        team: 'Boston Celtics',
+        icon: '🏀'
+      },
+      {
+        id: 2,
+        type: 'player',
+        name: 'LeBron James',
+        team: 'Los Angeles Lakers',
+        icon: '🏀'
+      },
+      {
+        id: 6,
+        type: 'player',
+        name: 'Luka Doncic',
+        team: 'Dallas Mavericks',
+        icon: '🏀'
+      },
+      {
+        id: 7,
+        type: 'player',
+        name: 'Giannis Antetokounmpo',
+        team: 'Milwaukee Bucks',
+        icon: '🏀'
+      },
+      {
+        id: 8,
+        type: 'player',
+        name: 'Damian Lillard',
+        team: 'Portland Trail Blazers',
+        icon: '🏀'
+      },
+      {
+        id: 15,
+        type: 'player',
+        name: 'Kevin Durant',
+        team: 'Phoenix Suns',
+        icon: '🏀'
+      },
+      // Teams
+      {
+        id: 3,
+        type: 'team',
+        name: 'Boston Celtics',
+        record: '64-18',
+        icon: '🟢'
+      },
+      {
+        id: 9,
+        type: 'team',
+        name: 'Los Angeles Lakers',
+        record: '56-26',
+        icon: '🟣'
+      },
+      {
+        id: 10,
+        type: 'team',
+        name: 'Denver Nuggets',
+        record: '57-25',
+        icon: '🟠'
+      },
+      {
+        id: 11,
+        type: 'team',
+        name: 'Phoenix Suns',
+        record: '62-20',
+        icon: '☀️'
+      },
+      // Topics
+      {
+        id: 12,
+        type: 'topic',
+        tag: '#MVPRace',
+        description: 'Who deserves MVP this season?',
+        icon: '🏆'
+      },
+      {
+        id: 13,
+        type: 'topic',
+        tag: '#Draft2024',
+        description: 'Upcoming draft picks and prospects',
+        icon: '🎯'
+      },
+      {
+        id: 14,
+        type: 'topic',
+        tag: '#Playoffs',
+        description: 'Playoff seeding and matchups',
+        icon: '🏅'
+      },
+      {
+        id: 16,
+        type: 'topic',
+        tag: '#TradeDeadline',
+        description: 'Team upgrades and rumors',
+        icon: '🔄'
+      },
+      // Users
+      {
+        id: 4,
+        type: 'user',
+        name: 'Basketball Analysis',
+        handle: '@basketballanalysis',
+        icon: '👤'
+      }
+    ];
+
+    // Filter results based on search query and type
+    let filtered = allResults.filter(result => {
+      const matchesQuery =
+        result.name?.toLowerCase().includes(queryLower) ||
+        result.tag?.toLowerCase().includes(queryLower) ||
+        result.handle?.toLowerCase().includes(queryLower) ||
+        result.description?.toLowerCase().includes(queryLower) ||
+        result.team?.toLowerCase().includes(queryLower);
+
+      const matchesType = type === 'all' || result.type === type;
+
+      return matchesQuery && matchesType;
+    });
+
+    // Add trending information to results
+    filtered = filtered.map(result => ({
+      ...result,
+      isTrending: isTrending(result.name || result.tag, result.type),
+      trendingInfo: getTrendingInfo(result.name || result.tag, result.type)
+    }));
+
+    // Sort trending results first
+    filtered.sort((a, b) => b.isTrending - a.isTrending);
+
+    setSearchResults(filtered);
+    setHasSearched(true);
+  };
 
   return (
     <div className="page-container">
@@ -117,7 +177,7 @@ const Trending = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item active">Trending</a>
+            <a href="/trending" className="nav-item active">Search</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -130,69 +190,104 @@ const Trending = () => {
         <div className="content-wrapper">
           <div className="feed-section">
             <div className="page-title">
-              <h2>Trending Now</h2>
-              <p>What's hot in basketball takes</p>
+              <h2>Search & Trending</h2>
+              <p>Find players, teams, or explore what's trending</p>
             </div>
 
-            <div className="trending-filters">
-              <div className="filter-group">
-                <label>Timeframe:</label>
-                <button
-                  className={`filter-btn ${timeframe === 'hour' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('hour')}
-                >
-                  Last Hour
-                </button>
-                <button
-                  className={`filter-btn ${timeframe === 'today' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('today')}
-                >
-                  Today
-                </button>
-                <button
-                  className={`filter-btn ${timeframe === 'week' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('week')}
-                >
-                  This Week
-                </button>
-                <button
-                  className={`filter-btn ${timeframe === 'month' ? 'active' : ''}`}
-                  onClick={() => setTimeframe('month')}
-                >
-                  This Month
-                </button>
+            {/* Search Bar */}
+            <form onSubmit={handleSearch} className="search-form">
+              <div className="search-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Search players, teams, users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input"
+                  autoFocus
+                />
               </div>
+            </form>
 
-              <div className="filter-group">
-                <label>Category:</label>
-                <button
-                  className={`filter-btn ${category === 'all' ? 'active' : ''}`}
-                  onClick={() => setCategory('all')}
-                >
-                  All
-                </button>
-                <button
-                  className={`filter-btn ${category === 'topics' ? 'active' : ''}`}
-                  onClick={() => setCategory('topics')}
-                >
-                  Topics
-                </button>
-                <button
-                  className={`filter-btn ${category === 'players' ? 'active' : ''}`}
-                  onClick={() => setCategory('players')}
-                >
-                  Players
-                </button>
-                <button
-                  className={`filter-btn ${category === 'teams' ? 'active' : ''}`}
-                  onClick={() => setCategory('teams')}
-                >
-                  Teams
-                </button>
+            {/* Search Results or Trending Content */}
+            {hasSearched ? (
+              <div className="search-results">
+                {searchResults.length > 0 ? (
+                  <>
+                    <p className="results-count">
+                      Found {searchResults.length} results for "{searchQuery}"
+                    </p>
+                    <div className="results-list">
+                      {searchResults.map((result) => {
+                        const handleClick = () => {
+                          if (result.type === 'player') {
+                            navigate(`/player/${encodeURIComponent(result.name)}`);
+                          } else if (result.type === 'team') {
+                            navigate(`/team/${result.name}`);
+                          }
+                        };
+
+                        return (
+                          <div
+                            key={result.id}
+                            className={`result-item ${result.isTrending ? 'trending-result' : ''} ${(result.type === 'player' || result.type === 'team') ? 'clickable' : ''}`}
+                            onClick={handleClick}
+                            style={(result.type === 'player' || result.type === 'team') ? { cursor: 'pointer' } : {}}
+                          >
+                            <span className="result-icon">{result.icon}</span>
+                            <div className="result-info">
+                              <div className="result-header">
+                                <p className="result-name">
+                                  {result.name || result.tag}
+                                  {result.isTrending && <span className="trending-badge">🔥 Trending</span>}
+                                </p>
+                              </div>
+                              {result.type === 'player' && (
+                                <p className="result-detail">{result.team}</p>
+                              )}
+                              {result.type === 'team' && (
+                                <p className="result-detail">{result.record}</p>
+                              )}
+                              {result.type === 'topic' && (
+                                <p className="result-detail">{result.description}</p>
+                              )}
+                              {result.type === 'user' && (
+                                <p className="result-detail">{result.handle}</p>
+                              )}
+                              {result.isTrending && result.trendingInfo && (
+                                <div className="trending-details">
+                                  {result.type === 'player' && (
+                                    <span className="trend-stat">{result.trendingInfo.mentions?.toLocaleString()} mentions</span>
+                                  )}
+                                  {result.type === 'team' && (
+                                    <span className="trend-stat">{result.trendingInfo.mentions?.toLocaleString()} mentions</span>
+                                  )}
+                                  {result.type === 'topic' && (
+                                    <span className="trend-stat">{result.trendingInfo.takes?.toLocaleString()} takes</span>
+                                  )}
+                                  <span className={`trend-indicator ${result.trendingInfo.trend.includes('↑') ? 'up' : result.trendingInfo.trend.includes('↓') ? 'down' : 'neutral'}`}>
+                                    {result.trendingInfo.trend}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            {(result.type === 'player' || result.type === 'team') && (
+                              <button className="btn btn-small">View →</button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-state">
+                    <p>😕 No results found</p>
+                    <small>Try searching for something else</small>
+                  </div>
+                )}
               </div>
-            </div>
-
-            {(category === 'all' || category === 'topics') && (
+            ) : (
+              <>
+                {(true) && (
               <div className="trending-section">
                 <h3>Trending Topics</h3>
                 <div className="trending-list">
@@ -217,7 +312,7 @@ const Trending = () => {
               </div>
             )}
 
-            {(category === 'all' || category === 'players') && (
+            {(true) && (
               <div className="trending-section">
                 <h3>Trending Players</h3>
                 <div className="trending-list">
@@ -242,7 +337,7 @@ const Trending = () => {
               </div>
             )}
 
-            {(category === 'all' || category === 'teams') && (
+            {(true) && (
               <div className="trending-section">
                 <h3>Trending Teams</h3>
                 <div className="trending-list">
@@ -270,6 +365,8 @@ const Trending = () => {
                   ))}
                 </div>
               </div>
+            )}
+              </>
             )}
           </div>
 

@@ -68,7 +68,7 @@ const Search = () => {
           <nav className="main-nav">
             <a href="/home" className="nav-item">Home</a>
             <a href="/rankings" className="nav-item">Rankings</a>
-            <a href="/trending" className="nav-item">Trending</a>
+            <a href="/trending" className="nav-item">Search</a>
             <a href="/search" className="nav-item active">Search</a>
           </nav>
         </div>

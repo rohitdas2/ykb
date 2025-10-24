@@ -9,6 +9,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState('feed');
   const [nbaGames, setNbaGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 23)); // Oct 23, 2025
   const [takes, setTakes] = useState([
     {
       id: 1,
@@ -68,12 +69,18 @@ const Home = () => {
     { category: 'Analysis', score: 8.0, description: 'Quality of takes', icon: '📊' },
   ];
 
-  // Fetch NBA games from Balldontlie API
+  // Fetch NBA games from Balldontlie API for selected date
   useEffect(() => {
     const fetchNBAGames = async () => {
       setLoadingGames(true);
       try {
-        const response = await fetch('https://api.balldontlie.io/v1/games?per_page=10');
+        // Format date as YYYY-MM-DD for API
+        const year = selectedDate.getFullYear();
+        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+        const day = String(selectedDate.getDate()).padStart(2, '0');
+        const dateStr = `${year}-${month}-${day}`;
+
+        const response = await fetch(`https://api.balldontlie.io/v1/games?dates[]=${dateStr}&per_page=50`);
         const data = await response.json();
         setNbaGames(data.data || []);
       } catch (error) {
@@ -85,10 +92,10 @@ const Home = () => {
     };
 
     fetchNBAGames();
-    // Refresh every 60 seconds for live updates
-    const interval = setInterval(fetchNBAGames, 60000);
+    // Refresh every 30 seconds for live updates
+    const interval = setInterval(fetchNBAGames, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate]);
 
   return (
     <div className="page-container">
@@ -101,7 +108,7 @@ const Home = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item active">Home</a>
-            <a href="/trending" className="nav-item">Trending</a>
+            <a href="/trending" className="nav-item">Search</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -220,8 +227,32 @@ const Home = () => {
             {activeTab === 'nba-scores' && (
               <div className="nba-scores-section">
                 <div className="nba-header">
-                  <h2>NBA Games Today</h2>
+                  <h2>NBA Games</h2>
                   <p>Real-time scores and game updates</p>
+                </div>
+
+                {/* Scrollable Calendar */}
+                <div className="games-calendar-scroll">
+                  <div className="calendar-dates">
+                    {Array.from({ length: 14 }, (_, i) => {
+                      const date = new Date(selectedDate);
+                      date.setDate(date.getDate() - 7 + i);
+                      const isSelected = date.toDateString() === selectedDate.toDateString();
+                      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                      const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
+
+                      return (
+                        <button
+                          key={i}
+                          className={`calendar-date ${isSelected ? 'active' : ''}`}
+                          onClick={() => setSelectedDate(date)}
+                        >
+                          <span className="date-day">{dayStr}</span>
+                          <span className="date-number">{dateStr}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {loadingGames ? (

@@ -803,18 +803,18 @@
 .search-input-wrapper {
   display: flex;
   gap: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   width: 100%;
 }
 
 .search-input {
   flex: 1;
-  padding: 16px 24px;
+  padding: 24px 32px;
   border: 2px solid #ddd;
   border-radius: 12px;
-  font-size: 18px;
+  font-size: 20px;
   transition: all 0.2s;
-  height: 56px;
+  height: 80px;
   display: flex;
   align-items: center;
 }
@@ -2008,6 +2008,25 @@
   background: #f9f9f9;
 }
 
+.sortable-header {
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+  background: #f0f4f8;
+  position: relative;
+}
+
+.sortable-header:hover {
+  background: #e6ecf1;
+  color: #00274C;
+}
+
+.sortable-header.active {
+  background: #d0e0f0;
+  color: #00274C;
+  font-weight: 800;
+}
+
 .stats-table td {
   padding: 14px 16px;
   border-bottom: 1px solid #eee;
@@ -2462,4 +2481,200 @@
     width: 100%;
     justify-content: space-around;
   }
+}
+
+/* Trending Takes Section */
+.trending-takes-section {
+  margin-top: 48px;
+  margin-bottom: 32px;
+}
+
+.trending-takes-section h2 {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #00274C;
+}
+
+.takes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.take-card {
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+  hover: all 0.2s;
+}
+
+.take-card:hover {
+  border-color: #00274C;
+  box-shadow: 0 4px 12px rgba(0, 39, 76, 0.1);
+}
+
+.take-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.take-author {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.take-author .avatar {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.take-author > div {
+  margin: 0;
+}
+
+.author-name {
+  font-weight: 600;
+  color: #000;
+  margin: 0;
+  font-size: 14px;
+}
+
+.author-handle {
+  color: #666;
+  font-size: 13px;
+  margin: 2px 0 0 0;
+}
+
+.take-rank {
+  display: flex;
+  align-items: center;
+}
+
+.rank-badge {
+  background: linear-gradient(135deg, #00274C, #003d7a);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.take-content {
+  color: #333;
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 12px 0;
+}
+
+.take-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.take-stats .stat {
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Clickable Items */
+.ranking-item.clickable {
+  transition: all 0.2s;
+}
+
+.ranking-item.clickable:hover {
+  background-color: #f0f4f8;
+  border-left: 3px solid #00274C;
+  padding-left: 17px;
+}
+
+.stats-table tbody tr.clickable-row {
+  transition: all 0.2s;
+}
+
+.stats-table tbody tr.clickable-row:hover {
+  background-color: #f0f4f8;
+  box-shadow: inset 0 0 0 1px #00274C;
+}
+
+.performer-item {
+  transition: all 0.2s;
+  border-radius: 8px;
+}
+
+.performer-item:hover {
+  background-color: #f0f4f8;
+  transform: translateX(4px);
+}
+
+/* Scrollable Calendar Styles */
+.games-calendar-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 20px 0;
+  padding: 10px 0;
+  background: linear-gradient(to right, #f9fafb 0%, transparent 5%, transparent 95%, #f9fafb 100%);
+  border-radius: 8px;
+}
+
+.calendar-dates {
+  display: flex;
+  gap: 10px;
+  padding: 10px 15px;
+  min-width: min-content;
+}
+
+.calendar-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-width: 70px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.calendar-date:hover {
+  border-color: #00274C;
+  background-color: #f0f4f8;
+}
+
+.calendar-date.active {
+  background-color: #00274C;
+  color: white;
+  border-color: #00274C;
+}
+
+.calendar-date .date-day {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.calendar-date.active .date-day {
+  color: #e0e0e0;
+}
+
+.calendar-date .date-number {
+  font-size: 14px;
+  font-weight: 600;
 }

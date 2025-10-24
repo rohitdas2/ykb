@@ -35,7 +35,7 @@ const Rankings = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item">Trending</a>
+            <a href="/trending" className="nav-item">Search</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -89,7 +89,12 @@ const Rankings = () => {
                   <div className="change-col">Change</div>
                 </div>
                 {players.map((player) => (
-                  <div key={player.id} className="ranking-item">
+                  <div
+                    key={player.id}
+                    className="ranking-item clickable"
+                    onClick={() => navigate(`/player/${encodeURIComponent(player.name)}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className="rank-col">{player.rank}</div>
                     <div className="name-col">
                       <span className="emoji">🏀</span>
@@ -112,18 +117,61 @@ const Rankings = () => {
                   <div className="score-col">Score</div>
                   <div className="change-col">Change</div>
                 </div>
-                {teams.map((team) => (
-                  <div key={team.id} className="ranking-item">
-                    <div className="rank-col">{team.rank}</div>
-                    <div className="name-col">
-                      <span className="emoji">🏆</span>
-                      <span>{team.name}</span>
+                {teams.map((team) => {
+                  // Map team name to team code
+                  const teamCodeMap = {
+                    'Boston Celtics': 'BOS',
+                    'Denver Nuggets': 'DEN',
+                    'Phoenix Suns': 'PHX',
+                    'Los Angeles Lakers': 'LAL',
+                    'Golden State Warriors': 'GSW',
+                    'Milwaukee Bucks': 'MIL',
+                    'Dallas Mavericks': 'DAL',
+                    'New York Knicks': 'NYK',
+                    'Los Angeles Clippers': 'LAC',
+                    'Miami Heat': 'MIA',
+                    'Brooklyn Nets': 'BRK',
+                    '76ers': 'PHI',
+                    'Philadelphia 76ers': 'PHI',
+                    'Atlanta Hawks': 'ATL',
+                    'Chicago Bulls': 'CHI',
+                    'Toronto Raptors': 'TOR',
+                    'Cleveland Cavaliers': 'CLE',
+                    'Orlando Magic': 'ORL',
+                    'Washington Wizards': 'WAS',
+                    'Indiana Pacers': 'IND',
+                    'Detroit Pistons': 'DET',
+                    'Charlotte Hornets': 'CHO',
+                    'New Orleans Pelicans': 'NOP',
+                    'San Antonio Spurs': 'SAS',
+                    'Memphis Grizzlies': 'MEM',
+                    'Utah Jazz': 'UTA',
+                    'Oklahoma City Thunder': 'OKC',
+                    'Portland Trail Blazers': 'POR',
+                    'Minnesota Timberwolves': 'MIN',
+                    'Sacramento Kings': 'SAC',
+                    'Houston Rockets': 'HOU'
+                  };
+                  const teamCode = teamCodeMap[team.name];
+
+                  return (
+                    <div
+                      key={team.id}
+                      className="ranking-item clickable"
+                      onClick={() => teamCode && navigate(`/team/${teamCode}`)}
+                      style={{ cursor: teamCode ? 'pointer' : 'default' }}
+                    >
+                      <div className="rank-col">{team.rank}</div>
+                      <div className="name-col">
+                        <span className="emoji">🏆</span>
+                        <span>{team.name}</span>
+                      </div>
+                      <div className="team-col">{team.wins}W</div>
+                      <div className="score-col">{team.score}/10</div>
+                      <div className="change-col">{team.change}</div>
                     </div>
-                    <div className="team-col">{team.wins}W</div>
-                    <div className="score-col">{team.score}/10</div>
-                    <div className="change-col">{team.change}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

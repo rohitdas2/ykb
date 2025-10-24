@@ -61,7 +61,7 @@ const Profile = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item">Trending</a>
+            <a href="/trending" className="nav-item">Search</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -82,6 +82,10 @@ const Profile = () => {
               <p className="profile-username">@{user?.username || 'username'}</p>
               <p className="profile-bio">Basketball enthusiast & takes connoisseur</p>
               <div className="profile-stats">
+                <div className="stat">
+                  <span className="stat-value">#247</span>
+                  <span className="stat-label">Overall Rank</span>
+                </div>
                 <div className="stat">
                   <span className="stat-value">34</span>
                   <span className="stat-label">Takes</span>
