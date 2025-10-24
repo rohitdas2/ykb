@@ -370,6 +370,28 @@ const Trending = () => {
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-card">
+              <h3>Trending Topics</h3>
+              <div className="trending-list">
+                <div className="trending-item">
+                  <p className="trending-tag">#MVP Race</p>
+                  <p className="trending-stats">125K takes</p>
+                </div>
+                <div className="trending-item">
+                  <p className="trending-tag">#Draft 2025</p>
+                  <p className="trending-stats">89K takes</p>
+                </div>
+                <div className="trending-item">
+                  <p className="trending-tag">#Playoffs</p>
+                  <p className="trending-stats">76K takes</p>
+                </div>
+                <div className="trending-item">
+                  <p className="trending-tag">#Trade Rumors</p>
+                  <p className="trending-stats">54K takes</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="sidebar-card">
               <h3>Search Tips</h3>
               <div className="info-box">
                 <ul>
