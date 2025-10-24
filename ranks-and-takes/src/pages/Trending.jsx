@@ -171,13 +171,6 @@ const Trending = () => {
     );
   };
 
-  const recentSearches = [
-    'Luka Doncic',
-    'Celtics vs Lakers',
-    '#MVPRace',
-    'Draft 2025',
-    'Giannis'
-  ];
 
   return (
     <div className="page-container">
@@ -266,25 +259,6 @@ const Trending = () => {
 
             {!hasSearched ? (
               <div className="search-suggestions">
-                <div className="suggestions-section">
-                  <h3>Recent Searches</h3>
-                  <div className="search-list">
-                    {recentSearches.map((search, idx) => (
-                      <button
-                        key={idx}
-                        className="search-item"
-                        onClick={() => {
-                          setSearchQuery(search);
-                          setHasSearched(true);
-                        }}
-                      >
-                        <span>🕐</span>
-                        <span>{search}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="suggestions-section">
                   <h3>Trending Topics</h3>
                   <div className="search-list">
