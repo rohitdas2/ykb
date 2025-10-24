@@ -109,6 +109,7 @@ const Home = () => {
       ]
     }
   ]);
+  const [selectedRatings, setSelectedRatings] = useState({});
   const [takes, setTakes] = useState([
     {
       id: 1,
@@ -152,6 +153,10 @@ const Home = () => {
   ]);
 
   const handleRateTake = (id, rating) => {
+    setSelectedRatings(prev => ({
+      ...prev,
+      [id]: rating
+    }));
     console.log(`Rated take ${id} with score ${rating}`);
     // TODO: Send rating to backend
   };
@@ -380,7 +385,7 @@ const Home = () => {
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
                       <button
                         key={rating}
-                        className="rating-btn"
+                        className={`rating-btn ${selectedRatings[take.id] === rating ? 'selected' : ''}`}
                         onClick={() => handleRateTake(take.id, rating)}
                         title={`Rate ${rating}/10`}
                       >

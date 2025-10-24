@@ -299,6 +299,12 @@
   color: #00274C;
 }
 
+.rating-btn.selected {
+  background: #00274C;
+  color: white;
+  border-color: #00274C;
+}
+
 /* Take Actions */
 .take-actions {
   display: flex;
