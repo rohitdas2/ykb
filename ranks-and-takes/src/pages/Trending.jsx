@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { trendingTopics, trendingPlayers, trendingTeams, isTrending, getTrendingInfo } from '../utils/trendingData';
 import '../styles/Pages.css';
 
 const Trending = () => {
   const navigate = useNavigate();
   const [timeframe, setTimeframe] = useState('today');
   const [category, setCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchType, setSearchType] = useState('all');
+  const [searchResults, setSearchResults] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const trendingTopics = [
     {
@@ -109,20 +114,15 @@ const Trending = () => {
         </div>
         <div className="header-center">
           <nav className="main-nav">
-            <a href="/home" className="nav-item">Home</a>
             <a href="/rankings" className="nav-item">Rankings</a>
+            <a href="/player-stats" className="nav-item">Player Stats</a>
+            <a href="/home" className="nav-item">Home</a>
             <a href="/trending" className="nav-item active">Trending</a>
-            <a href="/search" className="nav-item">Search</a>
+            <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
         <div className="header-right">
           <button className="btn btn-icon">🔔</button>
-          <button
-            className="btn btn-icon"
-            onClick={() => navigate('/profile')}
-          >
-            👤
-          </button>
         </div>
       </header>
 

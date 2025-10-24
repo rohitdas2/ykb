@@ -74,12 +74,6 @@ const Search = () => {
         </div>
         <div className="header-right">
           <button className="btn btn-icon">🔔</button>
-          <button
-            className="btn btn-icon"
-            onClick={() => navigate('/profile')}
-          >
-            👤
-          </button>
         </div>
       </header>
 

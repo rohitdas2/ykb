@@ -8,6 +8,9 @@ import Login from './pages/Login';
 import PhoneVerification from './pages/PhoneVerification';
 import Home from './pages/Home';
 import Rankings from './pages/Rankings';
+import PlayerStats from './pages/PlayerStats';
+import PlayerDetail from './pages/PlayerDetail';
+import TeamDetail from './pages/TeamDetail';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
 import Trending from './pages/Trending';
@@ -66,6 +69,14 @@ function App() {
           }
         />
         <Route
+          path="/player-stats"
+          element={
+            <ProtectedRoute>
+              <PlayerStats />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/profile"
           element={
             <ProtectedRoute>
@@ -75,17 +86,29 @@ function App() {
         />
         <Route
           path="/search"
-          element={
-            <ProtectedRoute>
-              <Search />
-            </ProtectedRoute>
-          }
+          element={<Navigate to="/trending" replace />}
         />
         <Route
           path="/trending"
           element={
             <ProtectedRoute>
               <Trending />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/player/:playerName"
+          element={
+            <ProtectedRoute>
+              <PlayerDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/team/:teamCode"
+          element={
+            <ProtectedRoute>
+              <TeamDetail />
             </ProtectedRoute>
           }
         />

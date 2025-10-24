@@ -98,20 +98,15 @@ const Home = () => {
         </div>
         <div className="header-center">
           <nav className="main-nav">
-            <a href="/home" className="nav-item active">Home</a>
             <a href="/rankings" className="nav-item">Rankings</a>
+            <a href="/player-stats" className="nav-item">Player Stats</a>
+            <a href="/home" className="nav-item active">Home</a>
             <a href="/trending" className="nav-item">Trending</a>
-            <a href="/search" className="nav-item">Search</a>
+            <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
         <div className="header-right">
           <button className="btn btn-icon">🔔</button>
-          <button
-            className="btn btn-icon"
-            onClick={() => navigate('/profile')}
-          >
-            👤
-          </button>
         </div>
       </header>
 
