@@ -68,6 +68,7 @@ const Profile = () => {
           </nav>
         </div>
         <div className="header-right">
+          <button className="btn btn-icon">💬</button>
           <button className="btn btn-icon">🔔</button>
         </div>
       </header>
