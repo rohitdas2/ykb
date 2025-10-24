@@ -26,6 +26,7 @@ export const useAuthStore = create(
           displayName: 'Guest User',
           username: 'guest',
           phoneNumber: null,
+          createdAt: new Date('2025-09-05').toISOString(),
         },
         isAuthenticated: false,
         isGuest: true,
