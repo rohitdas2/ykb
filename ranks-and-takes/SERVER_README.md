@@ -33,6 +33,73 @@ The following users are automatically created:
 
 ## API Endpoints
 
+### Notifications
+
+#### Get user notifications
+```
+GET /api/notifications/:userId
+```
+
+#### Create notification
+```
+POST /api/notifications
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "type": "mention|follow|like|trending",
+  "user": "Sports Analyst",
+  "action": "mentioned you in a take",
+  "message": "optional message",
+  "avatar": "👨‍💼"
+}
+```
+
+#### Mark notification as read
+```
+PUT /api/notifications/:notificationId/read
+```
+
+#### Delete notification
+```
+DELETE /api/notifications/:notificationId
+```
+
+### Players
+
+#### Get all players
+```
+GET /api/players
+```
+
+#### Get player by name
+```
+GET /api/players/:playerName
+```
+
+#### Get team roster
+```
+GET /api/players/team/:teamName
+```
+
+### Teams
+
+#### Get all teams
+```
+GET /api/teams
+```
+
+#### Get team by name
+```
+GET /api/teams/:teamName
+```
+
+#### Get conference standings
+```
+GET /api/teams/conference/East
+GET /api/teams/conference/West
+```
+
 ### Users
 
 #### Get all users
