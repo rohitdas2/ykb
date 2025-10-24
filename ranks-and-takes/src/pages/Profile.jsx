@@ -293,6 +293,20 @@ const Profile = () => {
           {/* Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-card">
+              <h3>Games Watched</h3>
+              <div className="stat-bar-item">
+                <div className="stat-bar-header">
+                  <span className="stat-bar-label">Progress</span>
+                  <span className="stat-bar-value">248 / 300</span>
+                </div>
+                <div className="stat-bar-container">
+                  <div className="stat-bar-progress" style={{ width: '82.67%' }}></div>
+                </div>
+                <p style={{ fontSize: '12px', color: '#999', marginTop: '8px' }}>Games watched this season</p>
+              </div>
+            </div>
+
+            <div className="sidebar-card">
               <h3>Achievements</h3>
               <div className="achievements-list">
                 <div className="achievement">
