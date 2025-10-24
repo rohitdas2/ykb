@@ -5,6 +5,49 @@ import '../styles/Pages.css';
 const Rankings = () => {
   const navigate = useNavigate();
   const [category, setCategory] = useState('players');
+  const [showDMs, setShowDMs] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messageText, setMessageText] = useState('');
+  const [conversations, setConversations] = useState([
+    {
+      id: 1,
+      name: 'Sports Analyst',
+      handle: '@sportsanalyst',
+      avatar: '👨‍💼',
+      lastMessage: 'Great take on the Celtics!',
+      lastMessageTime: '2 hours ago',
+      unread: 2,
+      messages: [
+        { id: 1, sender: 'Sports Analyst', text: 'Hey! Loved your recent take', timestamp: '1 hour ago', isOwn: false },
+        { id: 2, sender: 'You', text: 'Thanks! Appreciate the feedback', timestamp: '58 minutes ago', isOwn: true },
+        { id: 3, sender: 'Sports Analyst', text: 'Great take on the Celtics!', timestamp: '2 minutes ago', isOwn: false }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Hoops Lover',
+      handle: '@hoopslover',
+      avatar: '👩‍🦱',
+      lastMessage: 'Want to collab on a video?',
+      lastMessageTime: '5 hours ago',
+      unread: 0,
+      messages: [
+        { id: 1, sender: 'Hoops Lover', text: 'Want to collab on a video?', timestamp: '5 hours ago', isOwn: false }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Basketball Eyes',
+      handle: '@basketballeyes',
+      avatar: '👨‍🦨',
+      lastMessage: 'Check out my latest analysis',
+      lastMessageTime: '1 day ago',
+      unread: 0,
+      messages: [
+        { id: 1, sender: 'Basketball Eyes', text: 'Check out my latest analysis', timestamp: '1 day ago', isOwn: false }
+      ]
+    }
+  ]);
   const [players, setPlayers] = useState([
     { id: 1, rank: 1, name: 'Luka Doncic', team: 'Mavericks', score: 9.2, change: '↑ 1' },
     { id: 2, rank: 2, name: 'Giannis Antetokounmpo', team: 'Bucks', score: 9.0, change: '↓ 1' },
@@ -24,6 +67,28 @@ const Rankings = () => {
     { id: 5, rank: 5, name: 'Golden State Warriors', wins: 46, score: 7.9, change: '→' },
   ]);
 
+  const handleSendMessage = () => {
+    if (messageText.trim() && selectedConversation !== null) {
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        text: messageText,
+        timestamp: 'now',
+        isOwn: true
+      };
+
+      setConversations(prevConversations =>
+        prevConversations.map(conv =>
+          conv.id === selectedConversation
+            ? { ...conv, messages: [...conv.messages, newMessage], lastMessage: messageText, lastMessageTime: 'now' }
+            : conv
+        )
+      );
+
+      setMessageText('');
+    }
+  };
+
   return (
     <div className="page-container">
       <header className="app-header">
@@ -40,7 +105,7 @@ const Rankings = () => {
           </nav>
         </div>
         <div className="header-right">
-          <button className="btn btn-icon">💬</button>
+          <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
           <button className="btn btn-icon">🔔</button>
         </div>
       </header>
@@ -235,6 +300,88 @@ const Rankings = () => {
           </aside>
         </div>
       </main>
+
+      {/* DM Modal */}
+      {showDMs && (
+        <div className="dm-modal-overlay" onClick={() => setShowDMs(false)}>
+          <div className="dm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dm-header">
+              <h2>Messages</h2>
+              <button className="close-btn" onClick={() => setShowDMs(false)}>✕</button>
+            </div>
+
+            <div className="dm-container">
+              <div className="conversations-list">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`conversation-item ${selectedConversation === conv.id ? 'active' : ''} ${conv.unread > 0 ? 'unread' : ''}`}
+                    onClick={() => setSelectedConversation(conv.id)}
+                  >
+                    <div className="conversation-avatar">{conv.avatar}</div>
+                    <div className="conversation-info">
+                      <p className="conversation-name">{conv.name}</p>
+                      <p className="conversation-preview">{conv.lastMessage}</p>
+                    </div>
+                    <div className="conversation-meta">
+                      <p className="conversation-time">{conv.lastMessageTime}</p>
+                      {conv.unread > 0 && <span className="unread-badge">{conv.unread}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedConversation !== null && (
+                <div className="dm-chat">
+                  {(() => {
+                    const activeConv = conversations.find(c => c.id === selectedConversation);
+                    return (
+                      <>
+                        <div className="chat-header">
+                          <div className="chat-user">
+                            <span className="avatar">{activeConv.avatar}</span>
+                            <div>
+                              <p className="user-name">{activeConv.name}</p>
+                              <p className="user-handle">{activeConv.handle}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="messages-container">
+                          {activeConv.messages.map((msg) => (
+                            <div key={msg.id} className={`message ${msg.isOwn ? 'own' : 'other'}`}>
+                              <div className="message-content">{msg.text}</div>
+                              <div className="message-time">{msg.timestamp}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="message-input-box">
+                          <input
+                            type="text"
+                            placeholder="Type a message..."
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            className="message-input"
+                          />
+                          <button className="send-btn" onClick={handleSendMessage}>Send</button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {selectedConversation === null && (
+                <div className="dm-empty">
+                  <p>Select a conversation to start chatting</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

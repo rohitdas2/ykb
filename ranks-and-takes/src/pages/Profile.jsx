@@ -13,10 +13,113 @@ const Profile = () => {
   const [showFollowers, setShowFollowers] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(user?.createdAt ? new Date(user.createdAt) : new Date());
+  const [likedTakes, setLikedTakes] = useState(new Set());
+  const [actionStates, setActionStates] = useState(new Map());
+  const [showDMs, setShowDMs] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messageText, setMessageText] = useState('');
+  const [conversations, setConversations] = useState([
+    {
+      id: 1,
+      name: 'Sports Analyst',
+      handle: '@sportsanalyst',
+      avatar: '👨‍💼',
+      lastMessage: 'Great take on the Celtics!',
+      lastMessageTime: '2 hours ago',
+      unread: 2,
+      messages: [
+        { id: 1, sender: 'Sports Analyst', text: 'Hey! Loved your recent take', timestamp: '1 hour ago', isOwn: false },
+        { id: 2, sender: 'You', text: 'Thanks! Appreciate the feedback', timestamp: '58 minutes ago', isOwn: true },
+        { id: 3, sender: 'Sports Analyst', text: 'Great take on the Celtics!', timestamp: '2 minutes ago', isOwn: false }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Hoops Lover',
+      handle: '@hoopslover',
+      avatar: '👩‍🦱',
+      lastMessage: 'Want to collab on a video?',
+      lastMessageTime: '5 hours ago',
+      unread: 0,
+      messages: [
+        { id: 1, sender: 'Hoops Lover', text: 'Want to collab on a video?', timestamp: '5 hours ago', isOwn: false }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Basketball Eyes',
+      handle: '@basketballeyes',
+      avatar: '👨‍🦨',
+      lastMessage: 'Check out my latest analysis',
+      lastMessageTime: '1 day ago',
+      unread: 0,
+      messages: [
+        { id: 1, sender: 'Basketball Eyes', text: 'Check out my latest analysis', timestamp: '1 day ago', isOwn: false }
+      ]
+    }
+  ]);
+  const [friends, setFriends] = useState([
+    { id: 1, name: 'Sports Analyst', handle: '@sportsanalyst', avatar: '👨‍💼', isFriend: true },
+    { id: 2, name: 'Hoops Lover', handle: '@hoopslover', avatar: '👩‍🦱', isFriend: false },
+    { id: 3, name: 'Basketball Eyes', handle: '@basketballeyes', avatar: '👨‍🦨', isFriend: true },
+  ]);
+  const [showFriendsModal, setShowFriendsModal] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const toggleFriend = (friendId) => {
+    setFriends(prevFriends =>
+      prevFriends.map(friend =>
+        friend.id === friendId ? { ...friend, isFriend: !friend.isFriend } : friend
+      )
+    );
+  };
+
+  const handleLike = (takeId) => {
+    const newLikedTakes = new Set(likedTakes);
+    if (newLikedTakes.has(takeId)) {
+      newLikedTakes.delete(takeId);
+    } else {
+      newLikedTakes.add(takeId);
+    }
+    setLikedTakes(newLikedTakes);
+  };
+
+  const handleActionClick = (takeId, actionType) => {
+    const key = `${takeId}-${actionType}`;
+    const newActionStates = new Map(actionStates);
+
+    if (newActionStates.has(key)) {
+      newActionStates.delete(key);
+    } else {
+      newActionStates.set(key, true);
+    }
+    setActionStates(newActionStates);
+  };
+
+  const handleSendMessage = () => {
+    if (messageText.trim() && selectedConversation !== null) {
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        text: messageText,
+        timestamp: 'now',
+        isOwn: true
+      };
+
+      setConversations(prevConversations =>
+        prevConversations.map(conv =>
+          conv.id === selectedConversation
+            ? { ...conv, messages: [...conv.messages, newMessage], lastMessage: messageText, lastMessageTime: 'now' }
+            : conv
+        )
+      );
+
+      setMessageText('');
+    }
   };
 
   const userScores = [
@@ -68,7 +171,7 @@ const Profile = () => {
           </nav>
         </div>
         <div className="header-right">
-          <button className="btn btn-icon">💬</button>
+          <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
           <button className="btn btn-icon">🔔</button>
         </div>
       </header>
@@ -205,16 +308,28 @@ const Profile = () => {
                     </div>
 
                     <div className="take-actions">
-                      <button className="action-btn">
+                      <button
+                        className={`action-btn ${actionStates.has(`${take.id}-comment`) ? 'active' : ''}`}
+                        onClick={() => handleActionClick(take.id, 'comment')}
+                      >
                         💬
                       </button>
-                      <button className="action-btn">
-                        ❤️ {take.likes}
+                      <button
+                        className={`action-btn ${likedTakes.has(take.id) ? 'active liked' : ''}`}
+                        onClick={() => handleLike(take.id)}
+                      >
+                        {likedTakes.has(take.id) ? '❤️' : '🤍'} {take.likes}
                       </button>
-                      <button className="action-btn">
+                      <button
+                        className={`action-btn ${actionStates.has(`${take.id}-share`) ? 'active' : ''}`}
+                        onClick={() => handleActionClick(take.id, 'share')}
+                      >
                         ⤴️
                       </button>
-                      <button className="action-btn delete">
+                      <button
+                        className={`action-btn delete ${actionStates.has(`${take.id}-delete`) ? 'active' : ''}`}
+                        onClick={() => handleActionClick(take.id, 'delete')}
+                      >
                         🗑️
                       </button>
                     </div>
@@ -335,9 +450,159 @@ const Profile = () => {
                 </div>
               </div>
             </div>
+
+            <div className="sidebar-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h3 style={{ margin: 0 }}>Friends</h3>
+                <button
+                  className="view-all-btn"
+                  onClick={() => setShowFriendsModal(true)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#00274C',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    textDecoration: 'underline'
+                  }}
+                >
+                  Manage
+                </button>
+              </div>
+              <div className="friends-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {friends.filter(f => f.isFriend).slice(0, 3).map((friend) => (
+                  <div key={friend.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '8px',
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '6px'
+                  }}>
+                    <span style={{ fontSize: '20px' }}>{friend.avatar}</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: '12px', fontWeight: '600', color: '#000' }}>{friend.name}</p>
+                      <p style={{ margin: 0, fontSize: '11px', color: '#666' }}>{friend.handle}</p>
+                    </div>
+                    <span style={{ fontSize: '14px', color: '#00274C' }}>✓</span>
+                  </div>
+                ))}
+              </div>
+              {friends.filter(f => f.isFriend).length > 3 && (
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '8px', textAlign: 'center' }}>
+                  +{friends.filter(f => f.isFriend).length - 3} more friend(s)
+                </p>
+              )}
+            </div>
           </aside>
         </div>
       </main>
+
+      {/* Friends Management Modal */}
+      {showFriendsModal && (
+        <div className="modal-overlay" onClick={() => setShowFriendsModal(false)}>
+          <div className="modal-content" style={{ maxHeight: '600px', overflow: 'auto' }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Manage Friends</h2>
+              <button className="modal-close" onClick={() => setShowFriendsModal(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#00274C', margin: 0 }}>
+                    {friends.filter(f => f.isFriend).length}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>Friends</p>
+                </div>
+                <div style={{ flex: 1, textAlign: 'center' }}>
+                  <p style={{ fontSize: '32px', fontWeight: 'bold', color: '#999', margin: 0 }}>
+                    {friends.filter(f => !f.isFriend).length}
+                  </p>
+                  <p style={{ fontSize: '12px', color: '#666', margin: '4px 0 0 0' }}>Add</p>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#000' }}>Your Friends</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {friends.filter(f => f.isFriend).map((friend) => (
+                    <div key={friend.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      backgroundColor: '#f9f9f9',
+                      borderRadius: '8px',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      <span style={{ fontSize: '32px' }}>{friend.avatar}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#000' }}>{friend.name}</p>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#666' }}>{friend.handle}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleFriend(friend.id)}
+                        style={{
+                          background: '#ff4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '12px', color: '#000' }}>Add Friends</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {friends.filter(f => !f.isFriend).map((friend) => (
+                    <div key={friend.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      backgroundColor: '#f9f9f9',
+                      borderRadius: '8px',
+                      border: '1px solid #e0e0e0'
+                    }}>
+                      <span style={{ fontSize: '32px' }}>{friend.avatar}</span>
+                      <div style={{ flex: 1 }}>
+                        <p style={{ margin: 0, fontSize: '14px', fontWeight: '600', color: '#000' }}>{friend.name}</p>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#666' }}>{friend.handle}</p>
+                      </div>
+                      <button
+                        onClick={() => toggleFriend(friend.id)}
+                        style={{
+                          background: '#00274C',
+                          color: 'white',
+                          border: 'none',
+                          padding: '8px 16px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}
+                      >
+                        Add
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Settings Modal */}
       {showSettings && (
@@ -449,6 +714,88 @@ const Profile = () => {
                   Confirm
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DM Modal */}
+      {showDMs && (
+        <div className="dm-modal-overlay" onClick={() => setShowDMs(false)}>
+          <div className="dm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dm-header">
+              <h2>Messages</h2>
+              <button className="close-btn" onClick={() => setShowDMs(false)}>✕</button>
+            </div>
+
+            <div className="dm-container">
+              <div className="conversations-list">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`conversation-item ${selectedConversation === conv.id ? 'active' : ''} ${conv.unread > 0 ? 'unread' : ''}`}
+                    onClick={() => setSelectedConversation(conv.id)}
+                  >
+                    <div className="conversation-avatar">{conv.avatar}</div>
+                    <div className="conversation-info">
+                      <p className="conversation-name">{conv.name}</p>
+                      <p className="conversation-preview">{conv.lastMessage}</p>
+                    </div>
+                    <div className="conversation-meta">
+                      <p className="conversation-time">{conv.lastMessageTime}</p>
+                      {conv.unread > 0 && <span className="unread-badge">{conv.unread}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {selectedConversation !== null && (
+                <div className="dm-chat">
+                  {(() => {
+                    const activeConv = conversations.find(c => c.id === selectedConversation);
+                    return (
+                      <>
+                        <div className="chat-header">
+                          <div className="chat-user">
+                            <span className="avatar">{activeConv.avatar}</span>
+                            <div>
+                              <p className="user-name">{activeConv.name}</p>
+                              <p className="user-handle">{activeConv.handle}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="messages-container">
+                          {activeConv.messages.map((msg) => (
+                            <div key={msg.id} className={`message ${msg.isOwn ? 'own' : 'other'}`}>
+                              <div className="message-content">{msg.text}</div>
+                              <div className="message-time">{msg.timestamp}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="message-input-box">
+                          <input
+                            type="text"
+                            placeholder="Type a message..."
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            className="message-input"
+                          />
+                          <button className="send-btn" onClick={handleSendMessage}>Send</button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {selectedConversation === null && (
+                <div className="dm-empty">
+                  <p>Select a conversation to start chatting</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

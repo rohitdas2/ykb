@@ -10,6 +10,51 @@ const Home = () => {
   const [nbaGames, setNbaGames] = useState([]);
   const [loadingGames, setLoadingGames] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 23)); // Oct 23, 2025
+  const [showDMs, setShowDMs] = useState(false);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messageText, setMessageText] = useState('');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [selectedTakeToShare, setSelectedTakeToShare] = useState(null);
+  const [conversations, setConversations] = useState([
+    {
+      id: 1,
+      name: 'Sports Analyst',
+      handle: '@sportsanalyst',
+      avatar: '👨‍💼',
+      lastMessage: 'Great take on the Celtics!',
+      lastMessageTime: '2 hours ago',
+      unread: 2,
+      messages: [
+        { id: 1, sender: 'Sports Analyst', text: 'Hey! Loved your recent take', timestamp: '1 hour ago', isOwn: false },
+        { id: 2, sender: 'You', text: 'Thanks! Appreciate the feedback', timestamp: '58 minutes ago', isOwn: true },
+        { id: 3, sender: 'Sports Analyst', text: 'Great take on the Celtics!', timestamp: '2 minutes ago', isOwn: false }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Hoops Lover',
+      handle: '@hoopslover',
+      avatar: '👩‍🦱',
+      lastMessage: 'Want to collab on a video?',
+      lastMessageTime: '5 hours ago',
+      unread: 0,
+      messages: [
+        { id: 1, sender: 'Hoops Lover', text: 'Want to collab on a video?', timestamp: '5 hours ago', isOwn: false }
+      ]
+    },
+    {
+      id: 3,
+      name: 'Basketball Eyes',
+      handle: '@basketballeyes',
+      avatar: '👨‍🦨',
+      lastMessage: 'Check out my latest analysis',
+      lastMessageTime: '1 day ago',
+      unread: 0,
+      messages: [
+        { id: 1, sender: 'Basketball Eyes', text: 'Check out my latest analysis', timestamp: '1 day ago', isOwn: false }
+      ]
+    }
+  ]);
   const [takes, setTakes] = useState([
     {
       id: 1,
@@ -60,6 +105,56 @@ const Home = () => {
   const handleLikeTake = (id) => {
     console.log(`Liked take ${id}`);
     // TODO: Send like to backend
+  };
+
+  const handleSendMessage = () => {
+    if (messageText.trim() && selectedConversation !== null) {
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        text: messageText,
+        timestamp: 'now',
+        isOwn: true
+      };
+
+      setConversations(prevConversations =>
+        prevConversations.map(conv =>
+          conv.id === selectedConversation
+            ? { ...conv, messages: [...conv.messages, newMessage], lastMessage: messageText, lastMessageTime: 'now' }
+            : conv
+        )
+      );
+
+      setMessageText('');
+    }
+  };
+
+  const handleShareTake = (take) => {
+    setSelectedTakeToShare(take);
+    setShowShareModal(true);
+  };
+
+  const handleSendTakeMessage = (conversationId) => {
+    if (selectedTakeToShare) {
+      const newMessage = {
+        id: Date.now(),
+        sender: 'You',
+        text: `Check out this take: "${selectedTakeToShare.take}" - Score: ${selectedTakeToShare.rank}/10`,
+        timestamp: 'now',
+        isOwn: true
+      };
+
+      setConversations(prevConversations =>
+        prevConversations.map(conv =>
+          conv.id === conversationId
+            ? { ...conv, messages: [...conv.messages, newMessage], lastMessage: newMessage.text, lastMessageTime: 'now' }
+            : conv
+        )
+      );
+
+      setShowShareModal(false);
+      setSelectedTakeToShare(null);
+    }
   };
 
   const userScores = [
@@ -113,7 +208,7 @@ const Home = () => {
           </nav>
         </div>
         <div className="header-right">
-          <button className="btn btn-icon">💬</button>
+          <button className="btn btn-icon" onClick={() => setShowDMs(!showDMs)}>💬</button>
           <button className="btn btn-icon">🔔</button>
         </div>
       </header>
@@ -214,7 +309,7 @@ const Home = () => {
                     >
                       ❤️ {take.likes}
                     </button>
-                    <button className="action-btn">
+                    <button className="action-btn" onClick={() => handleShareTake(take)}>
                       ⤴️ Share
                     </button>
                   </div>
@@ -368,6 +463,132 @@ const Home = () => {
           </aside>
         </div>
       </main>
+
+      {/* Share Take Modal */}
+      {showShareModal && selectedTakeToShare && (
+        <div className="dm-modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="dm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dm-header">
+              <h2>Share Take</h2>
+              <button className="close-btn" onClick={() => setShowShareModal(false)}>✕</button>
+            </div>
+
+            <div className="share-modal-content">
+              <div className="share-take-preview">
+                <p className="share-take-text">{selectedTakeToShare.take}</p>
+                <div className="share-take-stats">
+                  <span className="stat">⭐ {selectedTakeToShare.rank}/10</span>
+                  <span className="stat">❤️ {selectedTakeToShare.likes}</span>
+                  <span className="stat">💬 {selectedTakeToShare.comments}</span>
+                </div>
+              </div>
+
+              <p style={{ padding: '16px 20px 8px', margin: '0', fontSize: '14px', fontWeight: '600', color: '#666' }}>Send to:</p>
+
+              <div className="conversations-list-share">
+                {conversations.map((conv) => (
+                  <button
+                    key={conv.id}
+                    className="share-conversation-item"
+                    onClick={() => handleSendTakeMessage(conv.id)}
+                  >
+                    <span className="avatar">{conv.avatar}</span>
+                    <div className="share-conv-info">
+                      <p className="conv-name">{conv.name}</p>
+                      <p className="conv-handle">{conv.handle}</p>
+                    </div>
+                    <span style={{ fontSize: '16px' }}>→</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DM Modal */}
+      {showDMs && (
+        <div className="dm-modal-overlay" onClick={() => setShowDMs(false)}>
+          <div className="dm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="dm-header">
+              <h2>Messages</h2>
+              <button className="close-btn" onClick={() => setShowDMs(false)}>✕</button>
+            </div>
+
+            <div className="dm-container">
+              {/* Conversations List */}
+              <div className="conversations-list">
+                {conversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    className={`conversation-item ${selectedConversation === conv.id ? 'active' : ''} ${conv.unread > 0 ? 'unread' : ''}`}
+                    onClick={() => setSelectedConversation(conv.id)}
+                  >
+                    <div className="conversation-avatar">{conv.avatar}</div>
+                    <div className="conversation-info">
+                      <p className="conversation-name">{conv.name}</p>
+                      <p className="conversation-preview">{conv.lastMessage}</p>
+                    </div>
+                    <div className="conversation-meta">
+                      <p className="conversation-time">{conv.lastMessageTime}</p>
+                      {conv.unread > 0 && <span className="unread-badge">{conv.unread}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Chat View */}
+              {selectedConversation !== null && (
+                <div className="dm-chat">
+                  {(() => {
+                    const activeConv = conversations.find(c => c.id === selectedConversation);
+                    return (
+                      <>
+                        <div className="chat-header">
+                          <div className="chat-user">
+                            <span className="avatar">{activeConv.avatar}</span>
+                            <div>
+                              <p className="user-name">{activeConv.name}</p>
+                              <p className="user-handle">{activeConv.handle}</p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="messages-container">
+                          {activeConv.messages.map((msg) => (
+                            <div key={msg.id} className={`message ${msg.isOwn ? 'own' : 'other'}`}>
+                              <div className="message-content">{msg.text}</div>
+                              <div className="message-time">{msg.timestamp}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="message-input-box">
+                          <input
+                            type="text"
+                            placeholder="Type a message..."
+                            value={messageText}
+                            onChange={(e) => setMessageText(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            className="message-input"
+                          />
+                          <button className="send-btn" onClick={handleSendMessage}>Send</button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {selectedConversation === null && (
+                <div className="dm-empty">
+                  <p>Select a conversation to start chatting</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
