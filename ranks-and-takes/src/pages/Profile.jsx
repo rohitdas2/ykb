@@ -307,6 +307,15 @@ const Profile = () => {
             </div>
 
             <div className="sidebar-card">
+              <h3>Average Rating</h3>
+              <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                <p style={{ fontSize: '48px', fontWeight: 'bold', color: '#00274C', margin: '0 0 8px 0' }}>7.8</p>
+                <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>/ 10.0</p>
+                <p style={{ fontSize: '12px', color: '#999', marginTop: '12px' }}>Based on 523 ratings</p>
+              </div>
+            </div>
+
+            <div className="sidebar-card">
               <h3>Achievements</h3>
               <div className="achievements-list">
                 <div className="achievement">
