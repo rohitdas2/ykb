@@ -231,7 +231,6 @@ const Search = () => {
                   className="search-input"
                   autoFocus
                 />
-                <button type="submit" className="btn btn-icon">🔍</button>
               </div>
 
               <div className="search-filters">
