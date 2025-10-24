@@ -11,6 +11,8 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFollowers, setShowFollowers] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(user?.createdAt ? new Date(user.createdAt) : new Date());
 
   const handleLogout = () => {
     logout();
@@ -81,7 +83,7 @@ const Profile = () => {
               <h2>{user?.displayName || 'Your Name'}</h2>
               <p className="profile-username">@{user?.username || 'username'}</p>
               <p className="profile-bio">Basketball enthusiast & takes connoisseur</p>
-              <p className="profile-joined">Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}</p>
+              <p className="profile-joined" style={{ cursor: 'pointer', color: '#00274C' }} onClick={() => setShowDatePicker(true)}>📅 Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Recently'}</p>
               <div className="profile-stats">
                 <div className="stat">
                   <span className="stat-value">#247</span>
@@ -405,6 +407,46 @@ const Profile = () => {
                     <button className="btn btn-small">Following</button>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Date Picker Modal */}
+      {showDatePicker && (
+        <div className="modal-overlay" onClick={() => setShowDatePicker(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Select Join Date</h2>
+              <button className="modal-close" onClick={() => setShowDatePicker(false)}>✕</button>
+            </div>
+
+            <div className="modal-body">
+              <div className="date-picker-container">
+                <input
+                  type="date"
+                  value={selectedDate.toISOString().split('T')[0]}
+                  onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                  style={{
+                    padding: '12px',
+                    fontSize: '16px',
+                    border: '2px solid #00274C',
+                    borderRadius: '8px',
+                    width: '100%',
+                    marginBottom: '16px'
+                  }}
+                />
+                <p style={{ textAlign: 'center', color: '#666', marginBottom: '16px' }}>
+                  {selectedDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </p>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => setShowDatePicker(false)}
+                  style={{ width: '100%' }}
+                >
+                  Confirm
+                </button>
               </div>
             </div>
           </div>
