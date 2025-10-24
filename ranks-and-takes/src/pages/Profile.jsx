@@ -101,10 +101,6 @@ const Profile = () => {
                   <span className="stat-value">856</span>
                   <span className="stat-label">Following</span>
                 </div>
-                <div className="stat">
-                  <span className="stat-value">7.8</span>
-                  <span className="stat-label">Avg Rating</span>
-                </div>
               </div>
             </div>
 
