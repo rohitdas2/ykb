@@ -152,7 +152,6 @@ const Profile = () => {
   const userScores = [
     { category: 'Accuracy', score: 7.8, description: 'How accurate your takes are', icon: '🎯' },
     { category: 'Popularity', score: 8.2, description: 'Community engagement', icon: '🌟' },
-    { category: 'Consistency', score: 7.5, description: 'Regular posting', icon: '📈' },
     { category: 'Analysis', score: 8.0, description: 'Quality of takes', icon: '📊' },
   ];
 
@@ -218,7 +217,8 @@ const Profile = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item">Search</a>
+            <a href="/search" className="nav-item">Search</a>
+            <a href="/scores" className="nav-item">Scores</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -499,13 +499,6 @@ const Profile = () => {
                   <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#00274C', marginTop: '4px' }}>75/100</span>
                 </div>
 
-                <div className="profile-stat-item">
-                  <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>Consistency Score</span>
-                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#00274C', marginTop: '4px' }}>8.5/10</span>
-                  <div className="stat-bar-container" style={{ height: '4px', background: '#eee', borderRadius: '2px', overflow: 'hidden', marginTop: '6px' }}>
-                    <div className="stat-bar-progress" style={{ width: '85%', height: '100%', background: '#00274C', borderRadius: '2px' }}></div>
-                  </div>
-                </div>
               </div>
             </div>
 

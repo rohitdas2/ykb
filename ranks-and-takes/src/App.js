@@ -14,6 +14,7 @@ import TeamDetail from './pages/TeamDetail';
 import Profile from './pages/Profile';
 import Search from './pages/Search';
 import Trending from './pages/Trending';
+import Scores from './pages/Scores';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -86,13 +87,25 @@ function App() {
         />
         <Route
           path="/search"
-          element={<Navigate to="/trending" replace />}
+          element={
+            <ProtectedRoute>
+              <Search />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/trending"
           element={
             <ProtectedRoute>
               <Trending />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/scores"
+          element={
+            <ProtectedRoute>
+              <Scores />
             </ProtectedRoute>
           }
         />

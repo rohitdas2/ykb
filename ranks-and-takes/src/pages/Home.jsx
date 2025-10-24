@@ -7,9 +7,6 @@ import '../styles/Pages.css';
 const Home = () => {
   const user = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const [nbaGames, setNbaGames] = useState([]);
-  const [loadingGames, setLoadingGames] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 23)); // Oct 23, 2025
   const [showDMs, setShowDMs] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
@@ -17,6 +14,13 @@ const Home = () => {
   const [selectedTakeToShare, setSelectedTakeToShare] = useState(null);
   const [profilePicture] = useState(localStorage.getItem('userProfilePicture'));
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // Format ball knowledge to 4 significant figures
+  const formatBK = (value) => {
+    if (value === 0) return '0.000';
+    const formatted = parseFloat(value.toPrecision(4));
+    return formatted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
   // Use shared notification store
   const notifications = useNotificationStore((state) => state.notifications);
@@ -253,33 +257,6 @@ const Home = () => {
     { category: 'Analysis', score: 8.0, description: 'Quality of takes', icon: '📊' },
   ];
 
-  // Fetch NBA games from Balldontlie API for selected date
-  useEffect(() => {
-    const fetchNBAGames = async () => {
-      setLoadingGames(true);
-      try {
-        // Format date as YYYY-MM-DD for API
-        const year = selectedDate.getFullYear();
-        const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-        const day = String(selectedDate.getDate()).padStart(2, '0');
-        const dateStr = `${year}-${month}-${day}`;
-
-        const response = await fetch(`https://api.balldontlie.io/v1/games?dates[]=${dateStr}&per_page=50`);
-        const data = await response.json();
-        setNbaGames(data.data || []);
-      } catch (error) {
-        console.error('Error fetching NBA games:', error);
-        setNbaGames([]);
-      } finally {
-        setLoadingGames(false);
-      }
-    };
-
-    fetchNBAGames();
-    // Refresh every 30 seconds for live updates
-    const interval = setInterval(fetchNBAGames, 30000);
-    return () => clearInterval(interval);
-  }, [selectedDate]);
 
   return (
     <div className="page-container">
@@ -292,7 +269,8 @@ const Home = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item active">Home</a>
-            <a href="/trending" className="nav-item">Search</a>
+            <a href="/search" className="nav-item">Search</a>
+            <a href="/scores" className="nav-item">Scores</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -313,77 +291,6 @@ const Home = () => {
       </header>
 
       <main className="main-content">
-        {/* NBA Scores Scrollable Section - Full Width */}
-        <div className="nba-scores-scroll-section">
-          <div className="nba-scores-header">
-            <h3>🏀 NBA Games</h3>
-          </div>
-
-          {/* Scrollable Calendar */}
-          <div className="games-calendar-scroll">
-            <div className="calendar-dates">
-              {Array.from({ length: 21 }, (_, i) => {
-                const date = new Date(selectedDate);
-                date.setDate(date.getDate() - 10 + i);
-                const isSelected = date.toDateString() === selectedDate.toDateString();
-                const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
-
-                return (
-                  <button
-                    key={i}
-                    className={`calendar-date ${isSelected ? 'active' : ''}`}
-                    onClick={() => setSelectedDate(date)}
-                  >
-                    <span className="date-day">{dayStr}</span>
-                    <span className="date-number">{dateStr}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {loadingGames ? (
-            <div className="loading-state" style={{ padding: '16px' }}>
-              <p>Loading games...</p>
-            </div>
-          ) : nbaGames.length > 0 ? (
-            <div className="nba-games-scroll">
-              {nbaGames.map((game) => (
-                <div key={game.id} className="nba-game-card-mini">
-                  <div className="game-status">
-                    {game.status === 'Final' ? (
-                      <span className="status-badge final">Final</span>
-                    ) : game.status === 'In Progress' ? (
-                      <span className="status-badge live">Live</span>
-                    ) : (
-                      <span className="status-badge scheduled">Scheduled</span>
-                    )}
-                  </div>
-
-                  <div className="game-matchup-mini">
-                    <div className="team-mini">
-                      <div className="team-name-mini">{game.home_team?.full_name}</div>
-                      <div className="team-score-mini">{game.home_team_score || 0}</div>
-                    </div>
-
-                    <div className="vs-mini">VS</div>
-
-                    <div className="team-mini">
-                      <div className="team-name-mini">{game.visitor_team?.full_name}</div>
-                      <div className="team-score-mini">{game.visitor_team_score || 0}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={{ padding: '16px', color: '#999', textAlign: 'center' }}>
-              <p>No games scheduled</p>
-            </div>
-          )}
-        </div>
-
         {/* Feed and Sidebar Side by Side */}
         <div className="content-wrapper">
           <div className="feed-section">
@@ -419,10 +326,12 @@ const Home = () => {
                       <span className="avatar">{take.avatar}</span>
                       <div className="author-details">
                         <p className="display-name">{take.displayName}</p>
-                        <p className="username">@{take.author}</p>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <p className="username">@{take.author}</p>
+                          <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>BK {formatBK(take.ballKnowledge)}</span>
+                        </div>
                       </div>
                     </div>
-                    <span className="timestamp">{take.timestamp}</span>
                   </div>
 
                   <div className="take-content">
@@ -470,12 +379,12 @@ const Home = () => {
                       className={`action-btn ${likedTakes.has(take.id) ? 'liked' : ''}`}
                       onClick={() => handleLikeTake(take.id)}
                     >
-                      ❤️ {take.likes}
+                      {likedTakes.has(take.id) ? '❤️' : '🤍'} {take.likes}
                     </button>
                     <button className="action-btn" onClick={() => handleShareTake(take)}>
                       ⤴️ Share
                     </button>
-                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#999' }}>{take.ballKnowledge}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#999' }}>{take.timestamp}</span>
                   </div>
 
                   {/* Top Comment Display */}

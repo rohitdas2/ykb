@@ -1,18 +1,109 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useNotificationStore } from '../store/notificationStore';
+import { sortByTrending } from '../utils/trendingAlgorithm';
 import '../styles/Pages.css';
 
 const Trending = () => {
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchType, setSearchType] = useState('all');
-  const [results, setResults] = useState([]);
-  const [hasSearched, setHasSearched] = useState(false);
   const [showDMs, setShowDMs] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messageText, setMessageText] = useState('');
+  const [likedTakes, setLikedTakes] = useState(new Set());
+  const [selectedRatings, setSelectedRatings] = useState({});
+
+  const initialTakes = [
+    {
+      id: 1,
+      author: 'SportsNerd23',
+      displayName: 'James Chen',
+      avatar: '👨‍🦱',
+      take: 'Jayson Tatum is the most underrated two-way player in the NBA right now',
+      rank: 8.5,
+      ballKnowledge: 78,
+      numRatings: 1203,
+      timestamp: '2 hours ago',
+      likes: 523,
+      comments: 148,
+      tags: ['NBA', 'Celtics', 'Analysis'],
+      commentsList: [
+        { id: 1, author: 'HoopsLover', avatar: '👩‍🦱', text: 'Completely agree, his defense is underrated', timestamp: '1 hour ago' },
+        { id: 2, author: 'NBAAnalyst', avatar: '👨‍💼', text: 'Great take! The stats back this up', timestamp: '45 minutes ago' }
+      ]
+    },
+    {
+      id: 2,
+      author: 'KnicksFan92',
+      displayName: 'Maria Rodriguez',
+      avatar: '👩‍🦱',
+      take: 'The Knicks will make the Finals within 2 years',
+      rank: 7.2,
+      ballKnowledge: 72,
+      numRatings: 856,
+      timestamp: '4 hours ago',
+      likes: 412,
+      comments: 98,
+      tags: ['NBA', 'Knicks', 'Prediction'],
+      commentsList: [
+        { id: 1, author: 'CelticsFan', avatar: '☘️', text: 'Bold prediction! Excited to see if this happens', timestamp: '3 hours ago' }
+      ]
+    },
+    {
+      id: 3,
+      author: 'AnalyticsBro',
+      displayName: 'Alex Kim',
+      avatar: '👨‍💼',
+      take: 'Advanced metrics show LeBron is still elite on defense',
+      rank: 9.1,
+      ballKnowledge: 89,
+      numRatings: 2103,
+      timestamp: '6 hours ago',
+      likes: 892,
+      comments: 234,
+      tags: ['NBA', 'Lakers', 'Stats'],
+      commentsList: [
+        { id: 1, author: 'StatsNerd', avatar: '📊', text: 'The advanced metrics really back this up', timestamp: '5 hours ago' },
+        { id: 2, author: 'BasketballEyes', avatar: '👀', text: 'VORP numbers are insane', timestamp: '4 hours ago' }
+      ]
+    },
+    {
+      id: 4,
+      author: 'HoopsVibes',
+      displayName: 'Dakota Smith',
+      avatar: '🏀',
+      take: 'Steph Curry has the highest basketball IQ in the league',
+      rank: 8.8,
+      ballKnowledge: 85,
+      numRatings: 1876,
+      timestamp: '3 hours ago',
+      likes: 756,
+      comments: 165,
+      tags: ['NBA', 'Warriors', 'Guards'],
+      commentsList: [
+        { id: 1, author: 'CurryFan', avatar: '⭐', text: 'His off-ball movement is incredible', timestamp: '2 hours ago' }
+      ]
+    },
+    {
+      id: 5,
+      author: 'DefenseMatters',
+      displayName: 'Jordan Williams',
+      avatar: '🛡️',
+      take: 'Defense wins championships, not pure scoring',
+      rank: 7.9,
+      ballKnowledge: 82,
+      numRatings: 1445,
+      timestamp: '5 hours ago',
+      likes: 634,
+      comments: 201,
+      tags: ['NBA', 'Strategy', 'Defense'],
+      commentsList: [
+        { id: 1, author: 'CoachTalk', avatar: '🏆', text: 'This is facts. Look at recent champions', timestamp: '4 hours ago' }
+      ]
+    }
+  ];
+
+  // Sort takes by trending score on mount
+  const [trendingTakes, setTrendingTakes] = useState(sortByTrending(initialTakes));
+
   const [conversations, setConversations] = useState([
     {
       id: 1,
@@ -59,45 +150,40 @@ const Trending = () => {
   const dismissNotification = useNotificationStore((state) => state.dismissNotification);
   const markAllAsRead = useNotificationStore((state) => state.markAllAsRead);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setHasSearched(true);
-      // TODO: Call backend API with search query
-      console.log('Searching for:', searchQuery, 'Type:', searchType);
+  const formatBK = (value) => {
+    if (value === 0) return '0.000';
+    const formatted = parseFloat(value.toPrecision(4));
+    return formatted.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
-      // Mock results
-      setResults([
-        {
-          id: 1,
-          type: 'player',
-          name: 'Jayson Tatum',
-          team: 'Boston Celtics',
-          icon: '🏀'
-        },
-        {
-          id: 2,
-          type: 'player',
-          name: 'LeBron James',
-          team: 'Los Angeles Lakers',
-          icon: '🏀'
-        },
-        {
-          id: 3,
-          type: 'team',
-          name: 'Boston Celtics',
-          record: '64-18',
-          icon: '🏆'
-        },
-        {
-          id: 4,
-          type: 'user',
-          name: 'Basketball Analysis',
-          handle: '@basketballanalysis',
-          icon: '👤'
-        }
-      ]);
-    }
+  const handleLikeTake = (id) => {
+    setTrendingTakes(prevTakes =>
+      prevTakes.map(take =>
+        take.id === id
+          ? {
+              ...take,
+              likes: likedTakes.has(id) ? take.likes - 1 : take.likes + 1
+            }
+          : take
+      )
+    );
+
+    setLikedTakes(prevLiked => {
+      const newLiked = new Set(prevLiked);
+      if (newLiked.has(id)) {
+        newLiked.delete(id);
+      } else {
+        newLiked.add(id);
+      }
+      return newLiked;
+    });
+  };
+
+  const handleRateTake = (id, rating) => {
+    setSelectedRatings(prev => ({
+      ...prev,
+      [id]: rating
+    }));
   };
 
   const handleSendMessage = () => {
@@ -124,7 +210,6 @@ const Trending = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-
   return (
     <div className="page-container">
       <header className="app-header">
@@ -136,7 +221,8 @@ const Trending = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item active">Search</a>
+            <a href="/search" className="nav-item">Search</a>
+            <a href="/scores" className="nav-item">Scores</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>
@@ -158,125 +244,120 @@ const Trending = () => {
         <div className="content-wrapper">
           <div className="feed-section">
             <div className="page-title">
-              <h2>Search</h2>
-              <p>Find players, teams, users, and takes</p>
+              <h2>🔥 Trending Takes</h2>
+              <p>The hottest takes right now</p>
             </div>
 
-            <form onSubmit={handleSearch} className="search-form">
-              <div className="search-input-wrapper">
-                <input
-                  type="text"
-                  placeholder="Search players, teams, users..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="search-input"
-                  autoFocus
-                />
-              </div>
-
-              <div className="search-filters">
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'all' ? 'active' : ''}`}
-                  onClick={() => setSearchType('all')}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'players' ? 'active' : ''}`}
-                  onClick={() => setSearchType('players')}
-                >
-                  Players
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'teams' ? 'active' : ''}`}
-                  onClick={() => setSearchType('teams')}
-                >
-                  Teams
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'users' ? 'active' : ''}`}
-                  onClick={() => setSearchType('users')}
-                >
-                  Users
-                </button>
-                <button
-                  type="button"
-                  className={`filter-btn ${searchType === 'takes' ? 'active' : ''}`}
-                  onClick={() => setSearchType('takes')}
-                >
-                  Takes
-                </button>
-              </div>
-            </form>
-
-            {!hasSearched ? (
-              <div className="search-suggestions">
-                <div className="suggestions-section">
-                  <h3>Trending Topics</h3>
-                  <div className="search-list">
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#MVPRace</span>
-                    </button>
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#Draft2025</span>
-                    </button>
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#Playoffs</span>
-                    </button>
-                    <button className="search-item">
-                      <span>📈</span>
-                      <span>#TradeRumors</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="search-results">
-                {results.length > 0 ? (
-                  <>
-                    <p className="results-count">
-                      Found {results.length} results for "{searchQuery}"
-                    </p>
-                    <div className="results-list">
-                      {results.map((result) => (
-                        <div key={result.id} className="result-item">
-                          <span className="result-icon">{result.icon}</span>
-                          <div className="result-info">
-                            <p className="result-name">{result.name}</p>
-                            {result.type === 'player' && (
-                              <p className="result-detail">{result.team}</p>
-                            )}
-                            {result.type === 'team' && (
-                              <p className="result-detail">{result.record}</p>
-                            )}
-                            {result.type === 'user' && (
-                              <p className="result-detail">{result.handle}</p>
-                            )}
-                          </div>
-                          <button className="btn btn-small">View</button>
+            {/* Trending Takes Feed */}
+            <div className="takes-list">
+              {trendingTakes.map((take) => (
+                <div key={take.id} className="take-card">
+                  <div className="take-header">
+                    <div className="author-info">
+                      <span className="avatar">{take.avatar}</span>
+                      <div className="author-details">
+                        <p className="display-name">{take.displayName}</p>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <p className="username">@{take.author}</p>
+                          <span style={{ fontSize: '12px', color: '#999', fontWeight: '500' }}>BK {formatBK(take.ballKnowledge)}</span>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="take-content">
+                    <p className="take-text">{take.take}</p>
+                    <div className="take-tags">
+                      {take.tags.map((tag, idx) => (
+                        <span key={idx} className="tag">#{tag}</span>
                       ))}
                     </div>
-                  </>
-                ) : (
-                  <div className="empty-state">
-                    <p>😕 No results found</p>
-                    <small>Try searching for something else</small>
                   </div>
-                )}
-              </div>
-            )}
+
+                  <div className="take-rating">
+                    <div className="rating-display">
+                      <div className="rating-score">
+                        <span className="score">{take.rank}</span>
+                        <span className="label">Score</span>
+                      </div>
+                      <div className="rating-stats">
+                        <p>{take.numRatings.toLocaleString()} ratings</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rating-buttons">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((rating) => (
+                      <button
+                        key={rating}
+                        className={`rating-btn ${selectedRatings[take.id] === rating ? 'selected' : ''}`}
+                        onClick={() => handleRateTake(take.id, rating)}
+                        title={`Rate ${rating}/10`}
+                      >
+                        {rating}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="take-actions">
+                    <button className="action-btn">
+                      💬 {take.comments}
+                    </button>
+                    <button
+                      className={`action-btn ${likedTakes.has(take.id) ? 'liked' : ''}`}
+                      onClick={() => handleLikeTake(take.id)}
+                    >
+                      {likedTakes.has(take.id) ? '❤️' : '🤍'} {take.likes}
+                    </button>
+                    <button className="action-btn">
+                      ⤴️ Share
+                    </button>
+                    <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#999' }}>{take.timestamp}</span>
+                  </div>
+
+                  {/* Top Comment Display */}
+                  {take.commentsList && take.commentsList.length > 0 && (
+                    <div className="top-comment-section">
+                      <div className="comment-divider"></div>
+                      <div className="top-comment">
+                        <div className="comment-header">
+                          <span className="comment-avatar">{take.commentsList[0].avatar}</span>
+                          <div className="comment-author-info">
+                            <p className="comment-author">{take.commentsList[0].author}</p>
+                            <p className="comment-time">{take.commentsList[0].timestamp}</p>
+                          </div>
+                        </div>
+                        <p className="comment-text">{take.commentsList[0].text}</p>
+                        {take.commentsList.length > 1 && (
+                          <button className="view-more-comments-btn">
+                            View {take.commentsList.length - 1} more comment{take.commentsList.length - 1 > 1 ? 's' : ''}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Sidebar */}
           <aside className="sidebar">
+            <div className="sidebar-card">
+              <h3>Top Trending</h3>
+              <div className="trending-list">
+                {trendingTakes.map((take) => (
+                  <div key={take.id} className="trending-item">
+                    <p className="trending-tag" style={{ fontSize: '13px', fontWeight: '600' }}>{take.displayName}</p>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                      <p className="trending-stats" style={{ margin: 0, fontSize: '12px' }}>{take.likes.toLocaleString()} likes</p>
+                      <span style={{ fontSize: '16px' }}>🔥 {take.trendingScore}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="sidebar-card">
               <h3>Trending Topics</h3>
               <div className="trending-list">
@@ -296,27 +377,6 @@ const Trending = () => {
                   <p className="trending-tag">#Trade Rumors</p>
                   <p className="trending-stats">54K takes</p>
                 </div>
-              </div>
-            </div>
-
-            <div className="sidebar-card">
-              <h3>Search Tips</h3>
-              <div className="info-box">
-                <ul>
-                  <li>Search for player names, teams, or usernames</li>
-                  <li>Use # to search for hashtags</li>
-                  <li>Filter by type to narrow results</li>
-                  <li>Your searches are saved for quick access</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="sidebar-card">
-              <h3>Quick Links</h3>
-              <div className="quick-links">
-                <a href="/rankings" className="link">📊 View All Rankings</a>
-                <a href="/home" className="link">🔥 Home Feed</a>
-                <a href="/profile" className="link">👤 Your Profile</a>
               </div>
             </div>
           </aside>

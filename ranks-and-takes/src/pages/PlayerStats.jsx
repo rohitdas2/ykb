@@ -203,7 +203,8 @@ const PlayerStats = () => {
             <a href="/rankings" className="nav-item">Rankings</a>
             <a href="/player-stats" className="nav-item active">Player Stats</a>
             <a href="/home" className="nav-item">Home</a>
-            <a href="/trending" className="nav-item">Search</a>
+            <a href="/search" className="nav-item">Search</a>
+            <a href="/scores" className="nav-item">Scores</a>
             <a href="/profile" className="nav-item">Profile</a>
           </nav>
         </div>

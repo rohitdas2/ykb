@@ -4083,6 +4083,9 @@
   border: none;
   border-bottom: 1px solid #eee;
   margin-bottom: 24px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .nba-scores-header {
@@ -4268,4 +4271,170 @@
 
 .comment-submit-btn:hover {
   background-color: #001a35;
+}
+
+/* Full Page Scores Section */
+.nba-scores-full-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  margin: 0 24px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.nba-scores-full-section h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #00274C;
+  margin: 0 0 20px 0;
+}
+
+.games-calendar-scroll {
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.calendar-dates {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.calendar-date {
+  flex: 0 0 70px;
+  background: white;
+  border: 2px solid #eee;
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 12px;
+  font-weight: 600;
+  color: #666;
+}
+
+.calendar-date:hover {
+  border-color: #00274C;
+  background: #f9f9f9;
+}
+
+.calendar-date.active {
+  background: #00274C;
+  border-color: #00274C;
+  color: white;
+}
+
+.date-day {
+  display: block;
+  font-size: 11px;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.date-number {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.nba-games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.nba-game-card {
+  background: linear-gradient(135deg, #f9f9f9 0%, #f0f0f0 100%);
+  border: 2px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.nba-game-card:hover {
+  border-color: #00274C;
+  box-shadow: 0 4px 12px rgba(0, 39, 76, 0.15);
+  transform: translateY(-2px);
+}
+
+.game-status {
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-badge.final {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.live {
+  background: #ffebee;
+  color: #c62828;
+  animation: pulse 1.5s infinite;
+}
+
+.status-badge.scheduled {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.game-matchup {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.team {
+  text-align: center;
+  padding: 8px;
+  background: white;
+  border-radius: 6px;
+}
+
+.team-name {
+  font-size: 13px;
+  color: #666;
+  font-weight: 600;
+  margin-bottom: 8px;
+  min-height: 20px;
+}
+
+.team-score {
+  font-size: 28px;
+  font-weight: 700;
+  color: #00274C;
+}
+
+.vs {
+  text-align: center;
+  font-size: 12px;
+  color: #999;
+  font-weight: 600;
+  padding: 4px 0;
+}
+
+.loading-state {
+  text-align: center;
+  color: #999;
+  padding: 24px;
+  font-size: 14px;
 }
