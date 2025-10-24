@@ -280,28 +280,6 @@ const Trending = () => {
                     </button>
                   </div>
                 </div>
-
-                <div className="suggestions-section">
-                  <h3>Popular Players</h3>
-                  <div className="search-list">
-                    <button className="search-item">
-                      <span>🏀</span>
-                      <span>Luka Doncic</span>
-                    </button>
-                    <button className="search-item">
-                      <span>🏀</span>
-                      <span>Giannis Antetokounmpo</span>
-                    </button>
-                    <button className="search-item">
-                      <span>🏀</span>
-                      <span>Jayson Tatum</span>
-                    </button>
-                    <button className="search-item">
-                      <span>🏀</span>
-                      <span>Kevin Durant</span>
-                    </button>
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="search-results">
